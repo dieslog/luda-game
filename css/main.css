@@ -1,0 +1,172 @@
+* {
+    box-sizing: border-box;
+}
+
+html, body {
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: Roboto, sans-serif;
+}
+
+#field_game {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    margin: 5px 10px 40px;
+    user-select: none;
+}
+
+#field_game tr {
+
+}
+
+#field_game .remove-box {
+    display: flex;
+    animation: 0.9s 0.1s ease normal forwards remove-box;
+}
+
+@keyframes remove-box {
+    0% {
+        display: flex;
+        height: calc((100vw - 60px) / 9);
+        transform: scale(1);
+    }
+
+    100% {
+        height: 0;
+        transform: scale(0);
+    }
+}
+
+
+
+
+#field_game td {
+    display: inline-flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: calc((100vw - 60px) / 9);
+    max-width: 50px;
+    height: calc((100vw - 60px) / 9);
+    max-height: 50px;
+    border: 1px solid #cccccc;
+    cursor: pointer;
+    border-radius: 4px;
+    margin: 2px;
+    color: #434343;
+    transition: transform 0.2s ease;
+}
+
+#field_game .close-box {
+    background-color: #92C5A7;
+    color: #92C5A7;
+    animation: 0.4s ease normal close-box;
+}
+
+@keyframes close-box {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.15);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+#field_game .click-box {
+    background-color: #92C5A740;
+    color: cadetblue;
+    transform: scale(1.08);
+}
+
+.rewrite-btn, .save-btn, .restore-btn, .check-btn {
+    width: 200px;
+    height: 40px;
+    border-radius: 4px;
+    outline: none;
+    cursor: pointer;
+}
+
+.rewrite-btn {
+    margin-top: 20px;
+    border: 1px solid #343a40;
+    color: #343a40;
+    background-color: white;
+}
+
+.save-btn {
+    margin-top: 60px;
+    border: 1px solid #28a745;
+    color: #28a745;
+    background-color: white;
+}
+
+.restore-btn {
+    margin-top: 20px;
+    border: 1px solid #17a2b8;
+    color: #17a2b8;
+    background-color: white;
+}
+
+.check-btn {
+    margin-top: 20px;
+    border: 1px solid #6c757d;
+    color: #6c757d;
+    background-color: white;
+}
+
+.check-btn path {
+    fill: red;
+}
+
+.counter {
+    position: relative;
+    width: 100%;
+}
+
+.count-tr {
+    color: #3e3e3e;
+    text-align: center;
+}
+
+.count-high {
+    position: absolute;
+    top: 0;
+    right: 10%;
+    color: rgba(62, 62, 62, 0.5);
+}
+
+.statistic {
+    display: flex;
+    padding: 30px 0 10px;
+    justify-content: center;
+    width: 100%;
+    color: rgba(62, 62, 62, 0.7);
+    position: relative;
+}
+
+.total-active-tr {
+    padding-right: 20px;
+    border-right: 2px solid rgba(62, 62, 62, 0.3);
+    margin: 0;
+}
+
+.total-active-td {
+    padding-left: 18px;
+    margin: 0;
+}
+.back {
+    margin: 0;
+    position: absolute;
+    left: calc(50% + 70px);
+    font-size: 30px;
+    line-height: 0.8;
+    cursor: pointer;
+}
