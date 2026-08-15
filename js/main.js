@@ -276,24 +276,40 @@ function soundForBox(turn) {
 // (not necessarily all from the same row). We only rebuild the preview's
 // contents when what it should show actually changes, so it doesn't
 // flicker while scrolling.
-let pinned_preview = document.querySelector('.pinned-row-preview');
+let top_bar_stats = document.querySelector('#top_bar_stats');
+let pinned_preview = document.querySelector('#pinned_row_preview');
 let pinned_preview_row = document.querySelector('.pinned-row-preview__row');
+let bottom_bar = document.querySelector('#bottom_bar');
 let lastPreviewSignature = null;
 let previewRafId = null;
 
 function updatePinnedPreview() {
+    // A large buffer (below) is needed so the preview updates well before a
+    // row is actually covered, but a fixed buffer that's bigger than the
+    // natural gap between the table and the bar will always look "hidden"
+    // even at scrollY = 0 — which is exactly the "shows by default and
+    // never goes away" bug. Scroll position itself is the real source of
+    // truth: if the page hasn't been scrolled at all, nothing is covered,
+    // full stop, regardless of how generous the buffer is.
+    if ((window.scrollY || window.pageYOffset || 0) <= 0) {
+        pinned_preview.classList.remove('is-visible');
+        lastPreviewSignature = null;
+        return;
+    }
+
     let rows = field_game.querySelectorAll('tr');
     let nearestByColumn = new Array(9).fill(null);
     let anyHidden = false;
 
-    // The bar itself sits on top of the page and covers whatever's behind
-    // it, so "hidden" isn't just rect.bottom <= 0 — it's rect.bottom <=
-    // the bar's own height (plus a little extra buffer so the swap happens
-    // slightly before a cell is actually half-covered, not exactly when
-    // it is). offsetHeight is used (not the animated/translated rect)
-    // since it reflects the bar's real size regardless of whether it's
-    // currently slid into view.
-    let barHeight = pinned_preview.offsetHeight + 25;
+    // The *stats* row height is what's permanently reserved (see
+    // adjustPageSpacing below) — that's the stable baseline to compare
+    // against. Using the whole top bar's height here (stats + preview)
+    // would create a feedback loop: once the preview shows, the threshold
+    // grows to include its own height, making it require scrolling back up
+    // even further just to hide itself again — which is exactly the "won't
+    // disappear on top" bug. A generous buffer is added on top so the swap
+    // happens well before a cell starts sliding under the bar.
+    let barHeight = top_bar_stats.offsetHeight + 72;
 
     // Rows come out in top-to-bottom order, so as we walk through the ones
     // that have scrolled fully behind the bar, later matches in the same
@@ -355,6 +371,24 @@ function schedulePinnedRowUpdate() {
 
 window.addEventListener('scroll', schedulePinnedRowUpdate, {passive: true});
 window.addEventListener('resize', schedulePinnedRowUpdate);
+
+// The top/bottom bars are `position: fixed`, so they don't push the page's
+// own content down/up automatically — without this, the fixed bars would
+// simply sit on top of the first/last rows of the table. We only reserve
+// space for the *stats* row up top (not the preview row, which is meant to
+// overlay content that's already scrolled away on purpose). A bit of extra
+// breathing room is added on both ends so the board doesn't sit flush
+// against either bar.
+const PAGE_SPACING_BUFFER = 16;
+
+function adjustPageSpacing() {
+    document.body.style.paddingTop = (top_bar_stats.offsetHeight + PAGE_SPACING_BUFFER) + 'px';
+    document.body.style.paddingBottom = (bottom_bar.offsetHeight + PAGE_SPACING_BUFFER) + 'px';
+}
+
+window.addEventListener('resize', adjustPageSpacing);
+window.addEventListener('load', adjustPageSpacing);
+adjustPageSpacing();
 
 function countActiveTr() {
     let temp_tr = field_game.querySelectorAll('tr');
@@ -479,7 +513,33 @@ check_btn.addEventListener('click', function () {
     }
 });
 
+// "Ще" burger menu — holds the less-frequently-used actions (Підказка,
+// Відновити) so the main action row stays short. Opens/closes on tap,
+// and also closes on an outside click or after picking an item.
+let menu_btn = document.querySelector('#menu_btn');
+let overflow_menu = document.querySelector('#overflow_menu');
+
+function closeOverflowMenu() {
+    overflow_menu.classList.remove('is-open');
+    menu_btn.classList.remove('is-open');
+}
+
+menu_btn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    let willOpen = !overflow_menu.classList.contains('is-open');
+    overflow_menu.classList.toggle('is-open', willOpen);
+    menu_btn.classList.toggle('is-open', willOpen);
+});
+
+document.addEventListener('click', function (e) {
+    if (overflow_menu.classList.contains('is-open') && !overflow_menu.contains(e.target) && e.target !== menu_btn) {
+        closeOverflowMenu();
+    }
+});
+
 hint_btn.addEventListener('click', function () {
+    closeOverflowMenu();
+
     if (!field_game.querySelectorAll('td:not(.close-box)').length) {
         return;
     }
@@ -541,44 +601,88 @@ save_btn.addEventListener('click', function () {
     }
 });
 
-restore_btn.addEventListener('click', function () {
-    if (!restore_check) {
-        let arrayBox = localStorage.getItem('arrayBox');
-        let level = localStorage.getItem('level');
+function performRestore() {
+    let arrayBox = localStorage.getItem('arrayBox');
+    let level = localStorage.getItem('level');
 
-        if (arrayBox && level) {
-            field_game.innerHTML = '';
-            let tr = document.createElement('tr');
-            arrayBox = arrayBox.split(',');
-            for (let i = 0; i < arrayBox.length; i++) {
-                let td = document.createElement('td');
-                if (!+arrayBox[i]) {
-                    td.classList.add('close-box')
-                }
-                td.innerText = arrayBox[i];
-                tr.append(td.cloneNode(true));
-                if (tr.children.length === 9 || i === arrayBox.length - 1) {
-                    field_game.append(tr.cloneNode(true));
-                    tr.innerHTML = '';
-                }
+    if (arrayBox && level) {
+        field_game.innerHTML = '';
+        let tr = document.createElement('tr');
+        arrayBox = arrayBox.split(',');
+        for (let i = 0; i < arrayBox.length; i++) {
+            let td = document.createElement('td');
+            if (!+arrayBox[i]) {
+                td.classList.add('close-box')
             }
-
-            // Same reasoning as rewrite_btn: the DOM was fully replaced, so
-            // old history entries are no longer valid.
-            array_history = [];
-            count_tr.innerText = level;
-            countActiveTr();
-            countActiveTd();
-            informer('Відновлено');
+            td.innerText = arrayBox[i];
+            tr.append(td.cloneNode(true));
+            if (tr.children.length === 9 || i === arrayBox.length - 1) {
+                field_game.append(tr.cloneNode(true));
+                tr.innerHTML = '';
+            }
         }
-        restore_check = true;
-        setTimeout(function () {
-            restore_check = false;
-        }, 10000);
+
+        // Same reasoning as rewrite_btn: the DOM was fully replaced, so
+        // old history entries are no longer valid.
+        array_history = [];
+        count_tr.innerText = level;
+        countActiveTr();
+        countActiveTd();
+        informer('Відновлено');
     } else {
-        informer('Дуже часті відновлення', 'warning');
+        informer('Немає збереженого поля', 'warning');
     }
+
+    restore_check = true;
+    setTimeout(function () {
+        restore_check = false;
+    }, 10000);
+}
+
+restore_btn.addEventListener('click', function () {
+    closeOverflowMenu();
+
+    if (restore_check) {
+        informer('Дуже часті відновлення', 'warning');
+        return;
+    }
+
+    askConfirmation(
+        'Відновити останнє збережене поле? Поточний прогрес буде втрачено.',
+        performRestore
+    );
 });
+
+// Reusable yes/no confirmation popup — currently only used before
+// overwriting the board with a saved game, so a mis-click on "Відновити"
+// can't silently wipe out the player's progress.
+let confirm_modal = document.querySelector('#confirm_modal');
+let confirm_modal_text = document.querySelector('#confirm_modal_text');
+let confirm_ok_btn = document.querySelector('#confirm_ok_btn');
+let confirm_cancel_btn = document.querySelector('#confirm_cancel_btn');
+
+function askConfirmation(message, onConfirm) {
+    confirm_modal_text.textContent = message;
+    confirm_modal.classList.add('is-visible');
+
+    function cleanup() {
+        confirm_modal.classList.remove('is-visible');
+        confirm_ok_btn.removeEventListener('click', handleConfirm);
+        confirm_cancel_btn.removeEventListener('click', handleCancel);
+    }
+
+    function handleConfirm() {
+        cleanup();
+        onConfirm();
+    }
+
+    function handleCancel() {
+        cleanup();
+    }
+
+    confirm_ok_btn.addEventListener('click', handleConfirm);
+    confirm_cancel_btn.addEventListener('click', handleCancel);
+}
 
 function informer(message, type = 'success') {
     toastr.options.timeOut = 2000;

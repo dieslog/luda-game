@@ -11,14 +11,22 @@
     <title>Гра</title>
 </head>
 <body>
-<div class="pinned-row-preview" id="pinned_row_preview">
-    <div class="pinned-row-preview__row"></div>
-</div>
-<div id="field_game">
-    <div class="counter">
-        <h2 class="count-tr">0</h2>
-        <h2 class="count-high">0</h2>
+
+<!-- Always-visible stats strip + the "nearest active cells" preview that
+     slides in under it once relevant content has scrolled out of view. -->
+<div class="top-bar" id="top_bar">
+    <div class="top-bar__stats" id="top_bar_stats">
+        <span class="top-bar__stat">Рівень <strong class="count-tr">0</strong></span>
+        <span class="top-bar__stat">Рекорд <strong class="count-high">0</strong></span>
+        <span class="top-bar__stat">Рядків <strong class="total-active-tr">3</strong></span>
+        <span class="top-bar__stat">Клітинок <strong class="total-active-td">27</strong></span>
     </div>
+    <div class="top-bar__preview" id="pinned_row_preview">
+        <div class="pinned-row-preview__row"></div>
+    </div>
+</div>
+
+<div id="field_game">
     <table>
         <tr>
             <td>1</td>
@@ -54,16 +62,56 @@
             <td>9</td>
         </tr>
     </table>
-    <div class="statistic">
-        <h3 class="total-active-tr">3</h3>
-        <h3 class="total-active-td">27</h3>
-        <h3 class="back">&#10554;</h3>
+</div>
+
+<!-- Always-visible action bar, icon-first so actions stay compact on
+     mobile. "Підказка" and "Відновити" live in the overflow menu since
+     they're used less often than the rest. -->
+<div class="bottom-bar" id="bottom_bar">
+    <button class="bottom-bar__btn back" title="Скасувати останній хід" aria-label="Назад">
+        <span class="bottom-bar__icon">&#8634;</span>
+        <span class="bottom-bar__label">Назад</span>
+    </button>
+    <button class="bottom-bar__btn rewrite-btn" title="Дописати активні числа в кінець поля" aria-label="Переписати">
+        <span class="bottom-bar__icon">&#8635;</span>
+        <span class="bottom-bar__label">Дописати</span>
+    </button>
+    <button class="bottom-bar__btn check-btn" title="Перевірити, чи є ще доступні ходи" aria-label="Чи є ще?">
+        <span class="bottom-bar__icon">?</span>
+        <span class="bottom-bar__label">Є ще?</span>
+    </button>
+    <button class="bottom-bar__btn save-btn" title="Зберегти поточне поле" aria-label="Зберегти">
+        <span class="bottom-bar__icon">&#8595;</span>
+        <span class="bottom-bar__label">Зберегти</span>
+    </button>
+    <button class="bottom-bar__btn menu-btn" id="menu_btn" title="Ще" aria-label="Меню">
+        <span class="bottom-bar__icon">&#9776;</span>
+        <span class="bottom-bar__label">Ще</span>
+    </button>
+
+    <div class="overflow-menu" id="overflow_menu">
+        <button class="overflow-menu__item hint-btn">
+            <span class="overflow-menu__icon">&#9432;</span>
+            <span>Підказка</span>
+        </button>
+        <button class="overflow-menu__item restore-btn">
+            <span class="overflow-menu__icon">&#8593;</span>
+            <span>Відновити</span>
+        </button>
     </div>
-    <button class="rewrite-btn">Переписати</button>
-    <button class="check-btn">Чи є ще?</button>
-    <button class="hint-btn">Підказка</button>
-    <button class="save-btn">Зберегти</button>
-    <button class="restore-btn">Відновити</button>
+</div>
+
+<!-- Confirmation popup, currently only used before overwriting the board
+     with a saved game so an accidental tap on "Відновити" can't wipe out
+     progress silently. -->
+<div class="modal-overlay" id="confirm_modal">
+    <div class="modal-box">
+        <p class="modal-box__text" id="confirm_modal_text">Ви впевнені?</p>
+        <div class="modal-box__actions">
+            <button class="modal-box__btn modal-box__btn--cancel" id="confirm_cancel_btn">Скасувати</button>
+            <button class="modal-box__btn modal-box__btn--confirm" id="confirm_ok_btn">Так, продовжити</button>
+        </div>
+    </div>
 </div>
 
 <script src="https://code.jquery.com/jquery-3.6.0.js" integrity="sha256-H+K7U5CnXl1h5ywQfKtSj8PCmoN9aaq30gDh27Xc0jk="

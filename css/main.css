@@ -16,7 +16,7 @@ body {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    margin: 5px 10px 40px;
+    margin: 0 10px;
     user-select: none;
 }
 
@@ -25,35 +25,59 @@ body {
 }
 
 /*
-  A small fixed bar at the very top of the screen — separate from the game
-  table itself, so it never interferes with the table's own layout or
-  clicking. It stays hidden (slid up above the viewport) until scrolling
-  pushes some active cells entirely out of view, at which point it slides
-  down and shows, per column, whichever still-active cell is nearest to
-  what's currently visible (skipping over already-closed/green cells and
-  cells from different rows as needed) — a read-only "skyline" of what's
-  immediately above the player right now.
+  A slim strip fixed to the very top of the screen. It always shows the
+  running stats (they used to scroll away with the rest of the board once
+  it got tall), and it also hosts the "nearest active cells" preview as a
+  second row that expands into view only when needed — see
+  .top-bar__preview below. Kept as one element so its total on-screen
+  height (stats + preview, when shown) is easy to measure from JS in one
+  place for the "what's covered right now" calculation.
 */
-.pinned-row-preview {
+.top-bar {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
-    z-index: 20;
+    z-index: 30;
+    background-color: #ffffff;
+    border-bottom: 1px solid #e2e2e2;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+.top-bar__stats {
     display: flex;
-    align-items: center;
+    flex-wrap: wrap;
     justify-content: center;
-    padding: 4px 10px;
+    gap: 4px 14px;
+    padding: 7px 10px;
+    font-size: 12px;
+    color: #6c757d;
+}
+
+.top-bar__stats strong {
+    color: #343a40;
+    font-weight: 600;
+}
+
+/* Collapsed by default (max-height: 0) so it takes no space until there's
+   something worth showing — see .top-bar__preview.is-visible. */
+.top-bar__preview {
+    display: flex;
+    justify-content: center;
+    max-height: 0;
+    overflow: hidden;
     background-color: #eaf6f9;
-    border-bottom: 1px solid #b7e2ea;
-    box-shadow: 0 4px 10px -3px rgba(23, 162, 184, 0.35);
-    transform: translateY(-110%);
-    transition: transform 0.25s ease;
+    transition: max-height 0.25s ease;
     pointer-events: none;
 }
 
-.pinned-row-preview.is-visible {
-    transform: translateY(0);
+.top-bar__preview.is-visible {
+    max-height: 70px;
+}
+
+.pinned-row-preview__row {
+    display: flex;
+    padding: 4px 10px;
 }
 
 .pinned-row-preview__row table {
@@ -227,108 +251,216 @@ body {
     }
 }
 
-.rewrite-btn, .save-btn, .restore-btn, .check-btn, .hint-btn {
-    width: 200px;
-    height: 40px;
-    border-radius: 4px;
-    outline: none;
-    cursor: pointer;
-    transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
-}
-
-.rewrite-btn:hover, .save-btn:hover, .restore-btn:hover, .check-btn:hover, .hint-btn:hover {
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-}
-
-.rewrite-btn:active, .save-btn:active, .restore-btn:active, .check-btn:active, .hint-btn:active {
-    transform: scale(0.97);
-}
-
-.rewrite-btn {
-    margin-top: 20px;
-    border: 1px solid #343a40;
-    color: #343a40;
-    background-color: white;
-}
-
-.save-btn {
-    margin-top: 60px;
-    border: 1px solid #28a745;
-    color: #28a745;
-    background-color: white;
-}
-
-.restore-btn {
-    margin-top: 20px;
-    border: 1px solid #17a2b8;
-    color: #17a2b8;
-    background-color: white;
-}
-
-.check-btn {
-    margin-top: 20px;
-    border: 1px solid #6c757d;
-    color: #6c757d;
-    background-color: white;
-}
-
-.hint-btn {
-    margin-top: 20px;
-    border: 1px solid #FFA500;
-    color: #a15c00;
-    background-color: white;
-}
-
-.check-btn path {
-    fill: red;
-}
-
-.counter {
-    position: relative;
-    width: 100%;
-}
-
-.count-tr {
-    color: #3e3e3e;
-    text-align: center;
-}
-
-.count-high {
-    position: absolute;
-    top: 0;
-    right: 10%;
-    color: rgba(62, 62, 62, 0.5);
-}
-
-.statistic {
+/*
+  Action bar fixed to the bottom of the screen, icon-first so six actions
+  fit comfortably on a phone without eating vertical space the way six
+  full-width text buttons used to. Each button keeps its original class
+  name (.rewrite-btn, .check-btn, ...) so the JS event listeners didn't
+  need to change at all.
+*/
+.bottom-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 30;
     display: flex;
-    padding: 30px 0 10px;
+    justify-content: space-around;
+    background-color: #ffffff;
+    border-top: 1px solid #e2e2e2;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.08);
+    padding: 4px 2px;
+    padding-bottom: calc(4px + env(safe-area-inset-bottom, 0px));
+}
+
+.bottom-bar__btn {
+    flex: 1 1 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     justify-content: center;
-    width: 100%;
-    color: rgba(62, 62, 62, 0.7);
-    position: relative;
-}
-
-.total-active-tr {
-    padding-right: 20px;
-    border-right: 2px solid rgba(62, 62, 62, 0.3);
-    margin: 0;
-}
-
-.total-active-td {
-    padding-left: 18px;
-    margin: 0;
-}
-.back {
-    margin: 0;
-    position: absolute;
-    left: calc(50% + 70px);
-    font-size: 30px;
-    line-height: 0.8;
+    gap: 2px;
+    background: none;
+    border: none;
+    outline: none;
+    padding: 6px 2px;
     cursor: pointer;
-    transition: transform 0.15s ease;
+    border-radius: 8px;
+    color: #495057;
+    transition: background-color 0.15s ease, transform 0.1s ease;
 }
 
-.back:active {
-    transform: scale(0.85) rotate(-20deg);
+.bottom-bar__btn:hover {
+    background-color: rgba(0, 0, 0, 0.04);
+}
+
+.bottom-bar__btn:active {
+    transform: scale(0.92);
+    background-color: rgba(0, 0, 0, 0.07);
+}
+
+.bottom-bar__icon {
+    font-size: 20px;
+    line-height: 1;
+}
+
+.bottom-bar__label {
+    font-size: 10px;
+    white-space: nowrap;
+}
+
+/* Every action shares the same neutral, monochrome tone (matching what the
+   "Назад" arrow already looked like) instead of a different accent color
+   per button — keeps the bar calm and consistent. */
+.bottom-bar__btn {
+    color: #495057;
+}
+
+.bottom-bar__btn.menu-btn.is-open {
+    background-color: rgba(0, 0, 0, 0.07);
+    color: #212529;
+}
+
+/*
+  Overflow menu ("Ще") — a small popup anchored above the bar that holds
+  the less-frequently-used actions (Підказка, Відновити), so the main row
+  stays short. Positioned relative to .bottom-bar itself (which already
+  establishes the containing block via position: fixed).
+*/
+.overflow-menu {
+    position: absolute;
+    right: 6px;
+    bottom: 100%;
+    margin-bottom: 8px;
+    min-width: 170px;
+    display: flex;
+    flex-direction: column;
+    background-color: #ffffff;
+    border: 1px solid #e2e2e2;
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+    transform-origin: bottom right;
+    pointer-events: none;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.overflow-menu.is-open {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+}
+
+.overflow-menu__item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    background: none;
+    border: none;
+    outline: none;
+    font-size: 14px;
+    text-align: left;
+    color: #343a40;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.overflow-menu__item:hover {
+    background-color: #f1f3f5;
+}
+
+.overflow-menu__item + .overflow-menu__item {
+    border-top: 1px solid #eee;
+}
+
+.overflow-menu__icon {
+    width: 18px;
+    font-size: 15px;
+    text-align: center;
+    color: #6c757d;
+}
+
+/*
+  Confirmation popup — used before an action that could wipe out progress
+  (currently just "Відновити"), so an accidental tap can't cost the player
+  their board.
+*/
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background-color: rgba(0, 0, 0, 0.45);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+}
+
+.modal-overlay.is-visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.modal-box {
+    width: 100%;
+    max-width: 320px;
+    padding: 20px;
+    border-radius: 10px;
+    background-color: #ffffff;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    text-align: center;
+    transform: scale(0.94);
+    transition: transform 0.2s ease;
+}
+
+.modal-overlay.is-visible .modal-box {
+    transform: scale(1);
+}
+
+.modal-box__text {
+    margin: 0 0 16px;
+    color: #333;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.modal-box__actions {
+    display: flex;
+    gap: 10px;
+}
+
+.modal-box__btn {
+    flex: 1;
+    padding: 10px 12px;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    outline: none;
+    transition: background-color 0.15s ease;
+}
+
+.modal-box__btn--cancel {
+    border: 1px solid #ced4da;
+    color: #495057;
+    background-color: #ffffff;
+}
+
+.modal-box__btn--cancel:hover {
+    background-color: #f1f3f5;
+}
+
+.modal-box__btn--confirm {
+    border: 1px solid #17a2b8;
+    color: #ffffff;
+    background-color: #17a2b8;
+}
+
+.modal-box__btn--confirm:hover {
+    background-color: #148ea1;
 }
