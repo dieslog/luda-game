@@ -439,9 +439,24 @@ body {
     line-height: 1.4;
 }
 
+.modal-box__icon {
+    font-size: 38px;
+    line-height: 1;
+    margin-bottom: 10px;
+}
+
 .modal-box__actions {
     display: flex;
     gap: 10px;
+}
+
+.modal-box__actions--single {
+    justify-content: center;
+}
+
+.modal-box__actions--single .modal-box__btn {
+    flex: none;
+    min-width: 160px;
 }
 
 .modal-box__btn {

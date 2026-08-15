@@ -98,6 +98,10 @@
             <span class="overflow-menu__icon">&#8593;</span>
             <span>Відновити</span>
         </button>
+        <button class="overflow-menu__item" id="sound_toggle_btn">
+            <span class="overflow-menu__icon">&#9834;</span>
+            <span id="sound_toggle_label">Звук: Увімкнено</span>
+        </button>
     </div>
 </div>
 
@@ -110,6 +114,17 @@
         <div class="modal-box__actions">
             <button class="modal-box__btn modal-box__btn--cancel" id="confirm_cancel_btn">Скасувати</button>
             <button class="modal-box__btn modal-box__btn--confirm" id="confirm_ok_btn">Так, продовжити</button>
+        </div>
+    </div>
+</div>
+
+<!-- Shown once the whole board has been cleared. -->
+<div class="modal-overlay" id="victory_modal">
+    <div class="modal-box">
+        <div class="modal-box__icon">&#127942;</div>
+        <p class="modal-box__text" id="victory_modal_text">Вітаємо! Ви закрили все поле.</p>
+        <div class="modal-box__actions modal-box__actions--single">
+            <button class="modal-box__btn modal-box__btn--confirm" id="victory_ok_btn">Чудово!</button>
         </div>
     </div>
 </div>

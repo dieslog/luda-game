@@ -197,7 +197,7 @@ function checkBox(check, element) {
 function finishGame() {
     let array_number = document.querySelectorAll('td:not(.close-box)');
     if (!array_number.length) {
-        alert('Молодець :p) :) :^');
+        showVictoryModal();
     }
 }
 
@@ -257,7 +257,15 @@ function countTr() {
     count_tr.innerText = temp_count_tr;
 }
 
+// Reads/writes the "sound on/off" setting (see the overflow menu toggle
+// further down), persisted so the choice survives a page reload.
+let soundEnabled = localStorage.getItem('soundEnabled') !== 'false';
+
 function soundForBox(turn) {
+    if (!soundEnabled) {
+        return;
+    }
+
     let array_sound = {
         close: './audio/close.mp3',
         remove: './audio/remove.mp3',
@@ -461,7 +469,7 @@ back.addEventListener('click', function () {
 rewrite_btn.addEventListener('click', function () {
     let array_number = field_game.querySelectorAll('td:not(.close-box)');
     if (!array_number.length) {
-        alert('Молодець ))');
+        informer('Поле вже повністю закрите 🎉');
         return;
     }
 
@@ -535,6 +543,39 @@ document.addEventListener('click', function (e) {
     if (overflow_menu.classList.contains('is-open') && !overflow_menu.contains(e.target) && e.target !== menu_btn) {
         closeOverflowMenu();
     }
+});
+
+// Sound on/off toggle, lives in the same overflow menu. Left open after
+// toggling (unlike the one-off actions below) so the player can see the
+// label update and flip it back and forth without reopening the menu.
+let sound_toggle_btn = document.querySelector('#sound_toggle_btn');
+let sound_toggle_label = document.querySelector('#sound_toggle_label');
+
+function updateSoundToggleLabel() {
+    sound_toggle_label.textContent = 'Звук: ' + (soundEnabled ? 'Увімкнено' : 'Вимкнено');
+}
+
+sound_toggle_btn.addEventListener('click', function () {
+    soundEnabled = !soundEnabled;
+    localStorage.setItem('soundEnabled', soundEnabled ? 'true' : 'false');
+    updateSoundToggleLabel();
+});
+
+updateSoundToggleLabel();
+
+// Victory popup — shown once every cell on the board has been closed.
+let victory_modal = document.querySelector('#victory_modal');
+let victory_modal_text = document.querySelector('#victory_modal_text');
+let victory_ok_btn = document.querySelector('#victory_ok_btn');
+
+function showVictoryModal() {
+    victory_modal_text.textContent = 'Вітаємо! Ви закрили все поле. ' +
+        'Рівень: ' + count_tr.innerText + ', рекорд: ' + count_high.innerText + '.';
+    victory_modal.classList.add('is-visible');
+}
+
+victory_ok_btn.addEventListener('click', function () {
+    victory_modal.classList.remove('is-visible');
 });
 
 hint_btn.addEventListener('click', function () {
