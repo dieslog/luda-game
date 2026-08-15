@@ -5,10 +5,18 @@
 html, body {
     margin: 0;
     padding: 0;
+    /* Stops the elastic "rubber-band" overscroll on mobile browsers that
+       let the page scroll past the actual end of the content into empty
+       space below the fixed bottom bar. */
+    overscroll-behavior-y: none;
 }
 
 body {
     font-family: Roboto, sans-serif;
+    /* Disables the double-tap-to-zoom gesture (tapping the bottom bar
+       twice in quick succession was triggering it) while still allowing
+       normal single taps and scrolling. */
+    touch-action: manipulation;
 }
 
 #field_game {
@@ -288,6 +296,7 @@ body {
     border-radius: 8px;
     color: #495057;
     transition: background-color 0.15s ease, transform 0.1s ease;
+    touch-action: manipulation;
 }
 
 .bottom-bar__btn:hover {
