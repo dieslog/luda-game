@@ -20,30 +20,104 @@ body {
     user-select: none;
 }
 
-#field_game tr {
-
+#field_game table {
+    border-collapse: collapse;
 }
 
-#field_game .remove-box {
+/*
+  A small fixed bar at the very top of the screen — separate from the game
+  table itself, so it never interferes with the table's own layout or
+  clicking. It stays hidden (slid up above the viewport) until scrolling
+  pushes some active cells entirely out of view, at which point it slides
+  down and shows, per column, whichever still-active cell is nearest to
+  what's currently visible (skipping over already-closed/green cells and
+  cells from different rows as needed) — a read-only "skyline" of what's
+  immediately above the player right now.
+*/
+.pinned-row-preview {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 20;
     display: flex;
-    animation: 0.9s 0.1s ease normal forwards remove-box;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 10px;
+    background-color: #eaf6f9;
+    border-bottom: 1px solid #b7e2ea;
+    box-shadow: 0 4px 10px -3px rgba(23, 162, 184, 0.35);
+    transform: translateY(-110%);
+    transition: transform 0.25s ease;
+    pointer-events: none;
 }
 
-@keyframes remove-box {
+.pinned-row-preview.is-visible {
+    transform: translateY(0);
+}
+
+.pinned-row-preview__row table {
+    border-collapse: collapse;
+}
+
+.pinned-row-preview__row td {
+    display: inline-flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: calc((100vw - 60px) / 9);
+    max-width: 50px;
+    height: calc((100vw - 60px) / 9);
+    max-height: 50px;
+    border: 1px solid #b7e2ea;
+    border-radius: 4px;
+    margin: 2px;
+    font-size: inherit;
+    color: #434343;
+    background-color: #ffffff;
+}
+
+.pinned-row-preview__row td.empty-slot {
+    border-color: transparent;
+    background-color: transparent;
+}
+
+/*
+  Row removal is no longer animated on the <tr> itself (animating height on a
+  table row is unreliable across browsers and was the source of the "jumpy"
+  effect). Instead every cell inside the row fades & shrinks in place, and
+  only once that finishes is the row actually removed from the DOM, so the
+  layout collapse happens after the cells are already invisible.
+*/
+#field_game .remove-box td {
+    animation: 0.45s cubic-bezier(0.55, 0, 0.55, 0.2) forwards remove-cell;
+    pointer-events: none;
+}
+
+#field_game .remove-box td:nth-child(1) { animation-delay: 0.00s; }
+#field_game .remove-box td:nth-child(2) { animation-delay: 0.02s; }
+#field_game .remove-box td:nth-child(3) { animation-delay: 0.04s; }
+#field_game .remove-box td:nth-child(4) { animation-delay: 0.06s; }
+#field_game .remove-box td:nth-child(5) { animation-delay: 0.08s; }
+#field_game .remove-box td:nth-child(6) { animation-delay: 0.10s; }
+#field_game .remove-box td:nth-child(7) { animation-delay: 0.12s; }
+#field_game .remove-box td:nth-child(8) { animation-delay: 0.14s; }
+#field_game .remove-box td:nth-child(9) { animation-delay: 0.16s; }
+
+@keyframes remove-cell {
     0% {
-        display: flex;
-        height: calc((100vw - 60px) / 9);
-        transform: scale(1);
+        transform: scale(1) rotate(0deg);
+        opacity: 1;
     }
-
+    55% {
+        transform: scale(1.12) rotate(2deg);
+        opacity: 0.65;
+    }
     100% {
-        height: 0;
-        transform: scale(0);
+        transform: scale(0.15) rotate(-8deg);
+        opacity: 0;
     }
 }
-
-
-
 
 #field_game td {
     display: inline-flex;
@@ -59,39 +133,115 @@ body {
     border-radius: 4px;
     margin: 2px;
     color: #434343;
-    transition: transform 0.2s ease;
+    background-color: #ffffff;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.25s ease, border-color 0.25s ease;
+}
+
+#field_game td:hover:not(.close-box) {
+    border-color: #92C5A7;
 }
 
 #field_game .close-box {
     background-color: #92C5A7;
     color: #92C5A7;
-    animation: 0.4s ease normal close-box;
+    animation: 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) close-box;
+    cursor: default;
 }
 
 @keyframes close-box {
     0% {
         transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(146, 197, 167, 0.6);
     }
-    50% {
-        transform: scale(1.15);
+    45% {
+        transform: scale(1.22) rotate(4deg);
+        box-shadow: 0 0 12px 4px rgba(146, 197, 167, 0.45);
+    }
+    75% {
+        transform: scale(0.94) rotate(-2deg);
     }
     100% {
-        transform: scale(1);
+        transform: scale(1) rotate(0deg);
+        box-shadow: 0 0 0 0 rgba(146, 197, 167, 0);
     }
 }
 
 #field_game .click-box {
     background-color: #92C5A740;
     color: cadetblue;
+    border-color: #92C5A7;
+    box-shadow: 0 0 6px 2px rgba(146, 197, 167, 0.35);
     transform: scale(1.08);
 }
 
-.rewrite-btn, .save-btn, .restore-btn, .check-btn {
+/* Hint: gently pulsing glow on the two cells the player is nudged toward */
+#field_game .hint-box {
+    background-color: #FFF3D6;
+    border-color: #FFA500;
+    color: #a15c00;
+    animation: 0.9s ease-in-out infinite alternate hint-pulse;
+    z-index: 1;
+}
+
+@keyframes hint-pulse {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(255, 165, 0, 0.45);
+    }
+    100% {
+        transform: scale(1.12);
+        box-shadow: 0 0 14px 5px rgba(255, 165, 0, 0.4);
+    }
+}
+
+/* Undo: brief highlight so the player notices what came back */
+#field_game .restore-highlight {
+    animation: 0.55s ease-out restore-pulse;
+}
+
+@keyframes restore-pulse {
+    0% {
+        transform: scale(1.25);
+        box-shadow: 0 0 10px 4px rgba(23, 162, 184, 0.55);
+        border-color: #17a2b8;
+    }
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(23, 162, 184, 0);
+    }
+}
+
+/* Rows fading/settling back in after an undo */
+#field_game .restore-row {
+    animation: 0.35s ease restore-row;
+}
+
+@keyframes restore-row {
+    0% {
+        opacity: 0;
+        transform: translateY(-6px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.rewrite-btn, .save-btn, .restore-btn, .check-btn, .hint-btn {
     width: 200px;
     height: 40px;
     border-radius: 4px;
     outline: none;
     cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
+}
+
+.rewrite-btn:hover, .save-btn:hover, .restore-btn:hover, .check-btn:hover, .hint-btn:hover {
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.rewrite-btn:active, .save-btn:active, .restore-btn:active, .check-btn:active, .hint-btn:active {
+    transform: scale(0.97);
 }
 
 .rewrite-btn {
@@ -119,6 +269,13 @@ body {
     margin-top: 20px;
     border: 1px solid #6c757d;
     color: #6c757d;
+    background-color: white;
+}
+
+.hint-btn {
+    margin-top: 20px;
+    border: 1px solid #FFA500;
+    color: #a15c00;
     background-color: white;
 }
 
@@ -169,4 +326,9 @@ body {
     font-size: 30px;
     line-height: 0.8;
     cursor: pointer;
+    transition: transform 0.15s ease;
+}
+
+.back:active {
+    transform: scale(0.85) rotate(-20deg);
 }
