@@ -277,6 +277,40 @@ function soundForBox(turn) {
     sound.play();
 }
 
+// Reads/writes the "cell background colors on/off" setting (see the
+// overflow menu toggle further down). Cells whose values can actually be
+// paired together (equal, or summing to 10) get the same soft background,
+// so the player can see compatibility at a glance instead of having to do
+// the math for every cell.
+let cellColorsEnabled = localStorage.getItem('cellColorsEnabled') !== 'false';
+
+const VALUE_COLOR_GROUPS = {
+    1: 'value-g1', 9: 'value-g1',
+    2: 'value-g2', 8: 'value-g2',
+    3: 'value-g3', 7: 'value-g3',
+    4: 'value-g4', 6: 'value-g4',
+    5: 'value-g5'
+};
+
+function colorizeCell(cell) {
+    Object.values(VALUE_COLOR_GROUPS).forEach(function (cls) {
+        cell.classList.remove(cls);
+    });
+
+    if (!cellColorsEnabled) {
+        return;
+    }
+
+    let groupClass = VALUE_COLOR_GROUPS[parseInt(cell.textContent, 10)];
+    if (groupClass) {
+        cell.classList.add(groupClass);
+    }
+}
+
+function colorizeAllCells() {
+    field_game.querySelectorAll('td').forEach(colorizeCell);
+}
+
 // A small fixed bar shows, for each of the 9 columns, whichever still-active
 // cell is nearest to the visible viewport among everything that's scrolled
 // above it — skipping already-closed (green) cells, and pulling from
@@ -507,6 +541,10 @@ rewrite_btn.addEventListener('click', function () {
 
     countActiveTr();
     countActiveTd();
+    addedCellsToLastTr.forEach(colorizeCell);
+    addedRows.forEach(function (row) {
+        Array.from(row.children).forEach(colorizeCell);
+    });
 });
 
 check_btn.addEventListener('click', function () {
@@ -562,6 +600,24 @@ sound_toggle_btn.addEventListener('click', function () {
 });
 
 updateSoundToggleLabel();
+
+// Cell background colors on/off toggle, same menu, same "stay open" idea.
+let cell_colors_toggle_btn = document.querySelector('#cell_colors_toggle_btn');
+let cell_colors_toggle_label = document.querySelector('#cell_colors_toggle_label');
+
+function updateCellColorsToggleLabel() {
+    cell_colors_toggle_label.textContent = 'Кольори клітинок: ' + (cellColorsEnabled ? 'Увімкнено' : 'Вимкнено');
+}
+
+cell_colors_toggle_btn.addEventListener('click', function () {
+    cellColorsEnabled = !cellColorsEnabled;
+    localStorage.setItem('cellColorsEnabled', cellColorsEnabled ? 'true' : 'false');
+    updateCellColorsToggleLabel();
+    colorizeAllCells();
+});
+
+updateCellColorsToggleLabel();
+colorizeAllCells();
 
 // Victory popup — shown once every cell on the board has been closed.
 let victory_modal = document.querySelector('#victory_modal');
@@ -669,6 +725,7 @@ function performRestore() {
         count_tr.innerText = level;
         countActiveTr();
         countActiveTd();
+        colorizeAllCells();
         informer('Відновлено');
     } else {
         informer('Немає збереженого поля', 'warning');

@@ -173,6 +173,42 @@ body {
     border-color: #92C5A7;
 }
 
+/*
+  Soft, calm background per "match group" — cells whose values could
+  actually be paired (equal, or summing to 10) share a color, so the
+  player can see at a glance what's compatible with what. Declared right
+  after the base td rule (and before .close-box/.click-box/.hint-box below)
+  so those state-based looks still win the cascade when a cell is also
+  closed/selected/hinted — being matched already or right now matters more
+  than its resting color. Toggled entirely via JS (colorizeCell/
+  colorizeAllCells add or strip these classes), so turning the setting off
+  just means the classes are absent, no override rules needed.
+*/
+#field_game .value-g1 {
+    background-color: #eaf2fb;
+    border-color: #c9def5;
+}
+
+#field_game .value-g2 {
+    background-color: #eaf7ee;
+    border-color: #c8e6d2;
+}
+
+#field_game .value-g3 {
+    background-color: #fff8e6;
+    border-color: #f5e5b8;
+}
+
+#field_game .value-g4 {
+    background-color: #f5eafb;
+    border-color: #e0c9f2;
+}
+
+#field_game .value-g5 {
+    background-color: #fdefe9;
+    border-color: #f3d9c9;
+}
+
 #field_game .close-box {
     background-color: #92C5A7;
     color: #92C5A7;
