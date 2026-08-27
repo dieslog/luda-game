@@ -45,6 +45,11 @@
 
     // --- lifecycle -----------------------------------------------------
     function start(digits, closed, level, totalRows) {
+        // never render an already-cleared row (guards against stale saves)
+        var cleaned = LG.board.dropClearedRows(digits, closed);
+        digits = cleaned.digits;
+        closed = cleaned.closed;
+
         tbody = LG.board.render(dom.field, digits, closed);
 
         state.active = true;

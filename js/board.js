@@ -167,16 +167,45 @@
     }
 
     // --- snapshot <-> DOM -------------------------------------------------
+    // A fully-closed row has already been beaten (or is mid-removal-animation
+    // and still in the DOM) - persisting it would restore an empty green row,
+    // so those rows are dropped from the snapshot.
     function snapshot(tbody) {
-        var cells = LG.$$('td', tbody);
-        return {
-            digits: cells.map(function (c) {
-                return parseInt(c.textContent, 10);
-            }),
-            closed: cells.map(function (c) {
-                return c.classList.contains('close-box');
-            })
-        };
+        var digits = [];
+        var closed = [];
+        LG.$$('tr', tbody).forEach(function (row) {
+            var cells = LG.$$('td', row);
+            var hasOpen = cells.some(function (c) {
+                return !c.classList.contains('close-box');
+            });
+            if (!hasOpen) {
+                return;
+            }
+            cells.forEach(function (c) {
+                digits.push(parseInt(c.textContent, 10));
+                closed.push(c.classList.contains('close-box'));
+            });
+        });
+        return {digits: digits, closed: closed};
+    }
+
+    // Same guard for data coming back in: strip any fully-closed row a stale
+    // save might still contain before it is rendered.
+    function dropClearedRows(digits, closed) {
+        var outDigits = [];
+        var outClosed = [];
+        for (var i = 0; i < digits.length; i += COLS) {
+            var rowDigits = digits.slice(i, i + COLS);
+            var rowClosed = (closed || []).slice(i, i + COLS);
+            var hasOpen = rowDigits.some(function (_, j) {
+                return !rowClosed[j];
+            });
+            if (hasOpen) {
+                outDigits = outDigits.concat(rowDigits);
+                outClosed = outClosed.concat(rowClosed);
+            }
+        }
+        return {digits: outDigits, closed: outClosed};
     }
 
     function openCells(tbody) {
@@ -198,6 +227,7 @@
         colorizeCell: colorizeCell,
         colorizeAll: colorizeAll,
         snapshot: snapshot,
+        dropClearedRows: dropClearedRows,
         openCells: openCells,
 
         isMatch: isMatch,
