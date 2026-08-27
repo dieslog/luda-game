@@ -6,19 +6,46 @@
           content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <link rel="shortcut icon" href="./images/favicon.png" type="image/x-icon">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
     <link rel="stylesheet" href="./css/main.css">
-    <title>Гра</title>
+    <title>Гра в числа</title>
 </head>
 <body>
+
+<!-- Main menu, shown on load and reachable again from the bottom bar's
+     "Головне меню" item or after a win. -->
+<div class="screen" id="main_menu">
+    <div class="screen__panel">
+        <h1 class="screen__title">Гра&nbsp;в&nbsp;числа</h1>
+        <p class="screen__record" id="menu_record">Рекорд: ще не встановлений</p>
+
+        <div class="screen__actions">
+            <button class="menu-btn-lg menu-btn-lg--primary" id="menu_continue">Продовжити гру</button>
+            <button class="menu-btn-lg" id="menu_new">Нова гра</button>
+            <button class="menu-btn-lg" id="menu_random">Згенерувати рівень</button>
+            <button class="menu-btn-lg menu-btn-lg--toggle" id="menu_sound">Звук: увімкнено</button>
+            <button class="menu-btn-lg menu-btn-lg--toggle" id="menu_colors">Кольори клітинок: увімкнено</button>
+            <button class="menu-btn-lg menu-btn-lg--ghost" id="menu_rules">Як грати</button>
+        </div>
+
+        <div class="screen__rules" id="menu_rules_box">
+            <p>Числа від 1 до 19 (без 10) записані в дев'ять колонок.</p>
+            <p>Закривайте пари сусідніх клітинок по горизонталі чи вертикалі, якщо числа
+                однакові або дають у сумі 10. Сусідніми також вважаються кінець одного рядка
+                та початок наступного.</p>
+            <p>Коли ходів не лишилось — тисніть «Дописати»: незакриті числа допишуться в нові рядки.</p>
+            <p>Мета — закрити все поле. У «Рекорд» зберігається найменша кількість рядків,
+                за яку це вдалося зробити.</p>
+        </div>
+    </div>
+</div>
 
 <!-- Always-visible stats strip + the "nearest active cells" preview that
      slides in under it once relevant content has scrolled out of view. -->
 <div class="top-bar" id="top_bar">
     <div class="top-bar__stats" id="top_bar_stats">
-        <span class="top-bar__stat">Рівень <strong class="count-tr">0</strong></span>
-        <span class="top-bar__stat">Рекорд <strong class="count-high">0</strong></span>
-        <span class="top-bar__stat">Рядків <strong class="total-active-tr">3</strong></span>
+        <span class="top-bar__stat">Рядків <strong class="count-tr">3</strong></span>
+        <span class="top-bar__stat">Рекорд <strong class="count-high">—</strong></span>
+        <span class="top-bar__stat">Активних <strong class="total-active-tr">3</strong></span>
         <span class="top-bar__stat">Клітинок <strong class="total-active-td">27</strong></span>
     </div>
     <div class="top-bar__preview" id="pinned_row_preview">
@@ -26,53 +53,18 @@
     </div>
 </div>
 
-<div id="field_game">
-    <table>
-        <tr>
-            <td>1</td>
-            <td>2</td>
-            <td>3</td>
-            <td>4</td>
-            <td>5</td>
-            <td>6</td>
-            <td>7</td>
-            <td>8</td>
-            <td>9</td>
-        </tr>
-        <tr>
-            <td>1</td>
-            <td>1</td>
-            <td>1</td>
-            <td>2</td>
-            <td>1</td>
-            <td>3</td>
-            <td>1</td>
-            <td>4</td>
-            <td>1</td>
-        </tr>
-        <tr>
-            <td>5</td>
-            <td>1</td>
-            <td>6</td>
-            <td>1</td>
-            <td>7</td>
-            <td>1</td>
-            <td>8</td>
-            <td>1</td>
-            <td>9</td>
-        </tr>
-    </table>
-</div>
+<!-- The board is built by js/board.js. -->
+<div id="field_game"></div>
 
 <!-- Always-visible action bar, icon-first so actions stay compact on
-     mobile. "Підказка" and "Відновити" live in the overflow menu since
-     they're used less often than the rest. -->
+     mobile. "Підказка", "Відновити" and "Головне меню" live in the overflow
+     menu since they're used less often than the rest. -->
 <div class="bottom-bar" id="bottom_bar">
     <button class="bottom-bar__btn back" title="Скасувати останній хід" aria-label="Назад">
         <span class="bottom-bar__icon">&#8634;</span>
         <span class="bottom-bar__label">Назад</span>
     </button>
-    <button class="bottom-bar__btn rewrite-btn" title="Дописати активні числа в кінець поля" aria-label="Переписати">
+    <button class="bottom-bar__btn rewrite-btn" title="Дописати активні числа в кінець поля" aria-label="Дописати">
         <span class="bottom-bar__icon">&#8635;</span>
         <span class="bottom-bar__label">Дописати</span>
     </button>
@@ -106,12 +98,15 @@
             <span class="overflow-menu__icon">&#9638;</span>
             <span id="cell_colors_toggle_label">Кольори клітинок: Увімкнено</span>
         </button>
+        <button class="overflow-menu__item" id="open_menu_btn">
+            <span class="overflow-menu__icon">&#8962;</span>
+            <span>Головне меню</span>
+        </button>
     </div>
 </div>
 
-<!-- Confirmation popup, currently only used before overwriting the board
-     with a saved game so an accidental tap on "Відновити" can't wipe out
-     progress silently. -->
+<!-- Reusable confirmation popup: overwriting the board with a saved game,
+     and confirming "Дописати" while legal moves still remain. -->
 <div class="modal-overlay" id="confirm_modal">
     <div class="modal-box">
         <p class="modal-box__text" id="confirm_modal_text">Ви впевнені?</p>
@@ -133,9 +128,14 @@
     </div>
 </div>
 
-<script src="https://code.jquery.com/jquery-3.6.0.js" integrity="sha256-H+K7U5CnXl1h5ywQfKtSj8PCmoN9aaq30gDh27Xc0jk="
-        crossorigin="anonymous"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+<script src="./js/util.js"></script>
+<script src="./js/storage.js"></script>
+<script src="./js/audio.js"></script>
+<script src="./js/confetti.js"></script>
+<script src="./js/board.js"></script>
+<script src="./js/preview.js"></script>
+<script src="./js/game.js"></script>
+<script src="./js/menu.js"></script>
 <script src="./js/main.js"></script>
 </body>
 </html>

@@ -104,7 +104,8 @@ body {
     border: 1px solid #b7e2ea;
     border-radius: 4px;
     margin: 2px;
-    font-size: inherit;
+    font-size: 18px;
+    font-weight: 600;
     color: #434343;
     background-color: #ffffff;
 }
@@ -115,26 +116,27 @@ body {
 }
 
 /*
-  Row removal is no longer animated on the <tr> itself (animating height on a
-  table row is unreliable across browsers and was the source of the "jumpy"
-  effect). Instead every cell inside the row fades & shrinks in place, and
-  only once that finishes is the row actually removed from the DOM, so the
-  layout collapse happens after the cells are already invisible.
+  Row removal happens in two stages, coordinated from game.js:
+    1. the cells of the cleared row fade & shrink in place (this keyframe);
+    2. once faded, game.js hides the row and slides every surviving row
+       below it up into the gap with a FLIP transform, so nothing snaps.
+  Table rows/cells treat `height` as a *minimum*, so the collapse can't be
+  done by animating the cell height here - hence the JS-driven slide.
 */
 #field_game .remove-box td {
-    animation: 0.45s cubic-bezier(0.55, 0, 0.55, 0.2) forwards remove-cell;
+    animation: 0.24s cubic-bezier(0.55, 0, 0.55, 0.2) forwards remove-cell;
     pointer-events: none;
 }
 
-#field_game .remove-box td:nth-child(1) { animation-delay: 0.00s; }
-#field_game .remove-box td:nth-child(2) { animation-delay: 0.02s; }
-#field_game .remove-box td:nth-child(3) { animation-delay: 0.04s; }
-#field_game .remove-box td:nth-child(4) { animation-delay: 0.06s; }
-#field_game .remove-box td:nth-child(5) { animation-delay: 0.08s; }
-#field_game .remove-box td:nth-child(6) { animation-delay: 0.10s; }
-#field_game .remove-box td:nth-child(7) { animation-delay: 0.12s; }
-#field_game .remove-box td:nth-child(8) { animation-delay: 0.14s; }
-#field_game .remove-box td:nth-child(9) { animation-delay: 0.16s; }
+#field_game .remove-box td:nth-child(1) { animation-delay: 0.000s; }
+#field_game .remove-box td:nth-child(2) { animation-delay: 0.010s; }
+#field_game .remove-box td:nth-child(3) { animation-delay: 0.020s; }
+#field_game .remove-box td:nth-child(4) { animation-delay: 0.030s; }
+#field_game .remove-box td:nth-child(5) { animation-delay: 0.040s; }
+#field_game .remove-box td:nth-child(6) { animation-delay: 0.050s; }
+#field_game .remove-box td:nth-child(7) { animation-delay: 0.060s; }
+#field_game .remove-box td:nth-child(8) { animation-delay: 0.070s; }
+#field_game .remove-box td:nth-child(9) { animation-delay: 0.080s; }
 
 @keyframes remove-cell {
     0% {
@@ -143,10 +145,10 @@ body {
     }
     55% {
         transform: scale(1.12) rotate(2deg);
-        opacity: 0.65;
+        opacity: 0.5;
     }
     100% {
-        transform: scale(0.15) rotate(-8deg);
+        transform: scale(0.12) rotate(-8deg);
         opacity: 0;
     }
 }
@@ -158,14 +160,19 @@ body {
     align-items: center;
     width: calc((100vw - 60px) / 9);
     max-width: 50px;
-    height: calc((100vw - 60px) / 9);
-    max-height: 50px;
+    /* min() rather than height + max-height so the *computed* height is
+       already the on-screen size - the row-removal keyframe interpolates
+       height -> 0 from that real value, with no max-height clamp making the
+       collapse stall for the first third of the animation. */
+    height: min(calc((100vw - 60px) / 9), 50px);
     border: 1px solid #cccccc;
     cursor: pointer;
     border-radius: 4px;
     margin: 2px;
     color: #434343;
     background-color: #ffffff;
+    font-size: 20px;
+    font-weight: 600;
     transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.25s ease, border-color 0.25s ease;
 }
 
@@ -523,4 +530,265 @@ body {
 
 .modal-box__btn--confirm:hover {
     background-color: #148ea1;
+}
+
+/* ===================================================================
+   Main menu screen
+   =================================================================== */
+.screen {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: linear-gradient(160deg, #eaf6f9 0%, #f4f0fb 60%, #fdefe9 100%);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+}
+
+.screen.is-visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.screen__panel {
+    width: 100%;
+    max-width: 360px;
+    text-align: center;
+    transform: translateY(14px) scale(0.97);
+    transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.screen.is-visible .screen__panel {
+    transform: translateY(0) scale(1);
+}
+
+.screen__title {
+    margin: 0 0 4px;
+    font-size: 30px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: #2f4858;
+}
+
+.screen__record {
+    margin: 0 0 22px;
+    font-size: 13px;
+    color: #6c757d;
+}
+
+.screen__actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.menu-btn-lg {
+    width: 100%;
+    padding: 14px 16px;
+    border: 1px solid #d5e3e6;
+    border-radius: 12px;
+    background-color: #ffffff;
+    color: #2f4858;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(47, 72, 88, 0.08);
+    transition: transform 0.12s ease, box-shadow 0.15s ease, background-color 0.15s ease, opacity 0.15s ease;
+}
+
+.menu-btn-lg:hover {
+    background-color: #f6fbfc;
+}
+
+.menu-btn-lg:active {
+    transform: scale(0.97);
+}
+
+.menu-btn-lg--primary {
+    border-color: #17a2b8;
+    background-color: #17a2b8;
+    color: #ffffff;
+    box-shadow: 0 4px 14px rgba(23, 162, 184, 0.32);
+}
+
+.menu-btn-lg--primary:hover {
+    background-color: #148ea1;
+}
+
+.menu-btn-lg--toggle {
+    font-size: 14px;
+    font-weight: 500;
+    color: #495057;
+}
+
+.menu-btn-lg--ghost {
+    border-style: dashed;
+    background-color: transparent;
+    box-shadow: none;
+    font-size: 14px;
+    font-weight: 500;
+    color: #6c757d;
+}
+
+.menu-btn-lg.is-disabled,
+.menu-btn-lg:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+.screen__rules {
+    max-height: 0;
+    overflow: hidden;
+    text-align: left;
+    font-size: 13px;
+    line-height: 1.5;
+    color: #52616b;
+    transition: max-height 0.3s ease, margin-top 0.3s ease;
+}
+
+.screen__rules.is-open {
+    max-height: 420px;
+    margin-top: 14px;
+}
+
+.screen__rules p {
+    margin: 0 0 8px;
+}
+
+/* ===================================================================
+   Lightweight toast (replaces toastr)
+   =================================================================== */
+.lg-toast-host {
+    position: fixed;
+    top: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 80;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    pointer-events: none;
+}
+
+.lg-toast {
+    max-width: 88vw;
+    padding: 10px 18px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #ffffff;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+    opacity: 0;
+    transform: translateY(-10px) scale(0.96);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.lg-toast.is-in {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+}
+
+.lg-toast--success {
+    background-color: #43aa8b;
+}
+
+.lg-toast--warning {
+    background-color: #e0a800;
+}
+
+/* ===================================================================
+   Confetti canvas (victory)
+   =================================================================== */
+.confetti-canvas {
+    position: fixed;
+    inset: 0;
+    z-index: 70;
+    pointer-events: none;
+}
+
+/* ===================================================================
+   Extra animations
+   =================================================================== */
+
+/* Wrong partner: quick horizontal shake. */
+#field_game .shake {
+    animation: 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) shake;
+}
+
+@keyframes shake {
+    10%, 90% { transform: translateX(-2px); }
+    20%, 80% { transform: translateX(3px); }
+    30%, 50%, 70% { transform: translateX(-6px); }
+    40%, 60% { transform: translateX(6px); }
+}
+
+/* Rows appearing: on a new game (staggered via --enter-delay) and on each
+   row added by "Дописати". */
+#field_game .row-enter td {
+    animation: 0.5s ease both row-enter-cell;
+    animation-delay: var(--enter-delay, 0ms);
+}
+
+@keyframes row-enter-cell {
+    0% {
+        opacity: 0;
+        transform: translateY(-14px) scale(0.8);
+    }
+    60% {
+        opacity: 1;
+        transform: translateY(2px) scale(1.04);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Stat number changed: brief pop. */
+.top-bar__stat strong.stat-pop {
+    display: inline-block;
+    animation: 0.32s ease stat-pop;
+}
+
+@keyframes stat-pop {
+    0% { transform: scale(1); }
+    45% { transform: scale(1.35); color: #17a2b8; }
+    100% { transform: scale(1); }
+}
+
+/* Victory modal: a livelier entrance than the plain scale. */
+#victory_modal.is-visible .modal-box {
+    animation: 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) victory-pop;
+}
+
+@keyframes victory-pop {
+    0% { transform: scale(0.6) rotate(-6deg); opacity: 0; }
+    60% { transform: scale(1.08) rotate(3deg); opacity: 1; }
+    100% { transform: scale(1) rotate(0deg); }
+}
+
+#victory_modal.is-visible .modal-box__icon {
+    display: inline-block;
+    animation: 0.9s ease-in-out 0.2s infinite alternate trophy-bob;
+}
+
+@keyframes trophy-bob {
+    0% { transform: translateY(0) rotate(-4deg); }
+    100% { transform: translateY(-6px) rotate(4deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #field_game .row-enter td,
+    #field_game .shake,
+    .top-bar__stat strong.stat-pop,
+    #victory_modal.is-visible .modal-box,
+    #victory_modal.is-visible .modal-box__icon {
+        animation: none !important;
+    }
 }
