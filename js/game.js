@@ -12,9 +12,9 @@
     //   +GAP_SLIDE_MS .. slide done
     //   ROW_REMOVE_DELAY  cleared <tr> is detached from the DOM for good
     // ROW_REMOVE_DELAY must be >= CELL_FADE_MS + GAP_SLIDE_MS.
-    var CELL_FADE_MS = 300;
-    var GAP_SLIDE_MS = 320;
-    var ROW_REMOVE_DELAY = 700;
+    var CELL_FADE_MS = 620;
+    var GAP_SLIDE_MS = 640;
+    var ROW_REMOVE_DELAY = 1350;
     var HINT_DURATION = 1800;
 
     var dom = {};

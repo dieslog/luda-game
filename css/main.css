@@ -124,19 +124,19 @@ body {
   done by animating the cell height here - hence the JS-driven slide.
 */
 #field_game .remove-box td {
-    animation: 0.24s cubic-bezier(0.55, 0, 0.55, 0.2) forwards remove-cell;
+    animation: 0.48s cubic-bezier(0.55, 0, 0.55, 0.2) forwards remove-cell;
     pointer-events: none;
 }
 
 #field_game .remove-box td:nth-child(1) { animation-delay: 0.000s; }
-#field_game .remove-box td:nth-child(2) { animation-delay: 0.010s; }
-#field_game .remove-box td:nth-child(3) { animation-delay: 0.020s; }
-#field_game .remove-box td:nth-child(4) { animation-delay: 0.030s; }
-#field_game .remove-box td:nth-child(5) { animation-delay: 0.040s; }
-#field_game .remove-box td:nth-child(6) { animation-delay: 0.050s; }
-#field_game .remove-box td:nth-child(7) { animation-delay: 0.060s; }
-#field_game .remove-box td:nth-child(8) { animation-delay: 0.070s; }
-#field_game .remove-box td:nth-child(9) { animation-delay: 0.080s; }
+#field_game .remove-box td:nth-child(2) { animation-delay: 0.020s; }
+#field_game .remove-box td:nth-child(3) { animation-delay: 0.040s; }
+#field_game .remove-box td:nth-child(4) { animation-delay: 0.060s; }
+#field_game .remove-box td:nth-child(5) { animation-delay: 0.080s; }
+#field_game .remove-box td:nth-child(6) { animation-delay: 0.100s; }
+#field_game .remove-box td:nth-child(7) { animation-delay: 0.120s; }
+#field_game .remove-box td:nth-child(8) { animation-delay: 0.140s; }
+#field_game .remove-box td:nth-child(9) { animation-delay: 0.160s; }
 
 @keyframes remove-cell {
     0% {
