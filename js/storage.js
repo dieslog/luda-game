@@ -1,15 +1,18 @@
 // All localStorage access goes through here so keys and shapes live in one
-// place. Everything is namespaced under "lg." to avoid clashes and to make
-// the old (incompatible) keys easy to ignore.
+// place. Everything is namespaced under "lg." to avoid clashes.
 (function (LG) {
     'use strict';
 
     var KEYS = {
-        autosave: 'lg.autosave',     // JSON snapshot, rewritten after every move
-        checkpoint: 'lg.checkpoint', // JSON snapshot, written by the manual "Зберегти"
-        bestRows: 'lg.bestRows',     // number: fewest rows a finished game ever took
-        sound: 'lg.sound',           // '1' | '0'
-        cellColors: 'lg.cellColors'  // '1' | '0'
+        autosave: 'lg.autosave',         // JSON snapshot, rewritten after every move
+        checkpoint: 'lg.checkpoint',     // JSON snapshot, written by the manual "Зберегти"
+        bestRows: 'lg.bestRows',         // number: fewest rows a finished game ever took
+        settings: 'lg.settings',         // JSON: user preferences
+        stats: 'lg.stats',               // JSON: lifetime statistics
+        achievements: 'lg.achievements', // JSON: { id: unlockTimestamp }
+        daily: 'lg.daily',               // JSON: { 'YYYY-MM-DD': { rows, timeMs } }
+        legacySound: 'lg.sound',         // '1' | '0'   (pre-settings era)
+        legacyColors: 'lg.cellColors'    // '1' | '0'   (pre-settings era)
     };
 
     function readJSON(key) {
@@ -35,9 +38,23 @@
         } catch (e) { /* ignore */ }
     }
 
-    // A snapshot is: { digits: number[], closed: boolean[], level, totalRows }
+    function readRaw(key) {
+        try {
+            return localStorage.getItem(key);
+        } catch (e) {
+            return null;
+        }
+    }
+
+    // A game snapshot is:
+    //   { v, digits[], closed[], level, totalRows, mode, seed,
+    //     elapsed, score, moves, hints, undos, rewrites }
     LG.storage = {
         KEYS: KEYS,
+
+        readJSON: readJSON,
+        writeJSON: writeJSON,
+        readRaw: readRaw,
 
         saveAuto: function (snapshot) {
             writeJSON(KEYS.autosave, snapshot);
@@ -49,7 +66,8 @@
             remove(KEYS.autosave);
         },
         hasAuto: function () {
-            return !!readJSON(KEYS.autosave);
+            var s = readJSON(KEYS.autosave);
+            return !!(s && s.digits && s.digits.length);
         },
 
         saveCheckpoint: function (snapshot) {
@@ -59,11 +77,12 @@
             return readJSON(KEYS.checkpoint);
         },
         hasCheckpoint: function () {
-            return !!readJSON(KEYS.checkpoint);
+            var s = readJSON(KEYS.checkpoint);
+            return !!(s && s.digits && s.digits.length);
         },
 
         getBestRows: function () {
-            var raw = localStorage.getItem(KEYS.bestRows);
+            var raw = readRaw(KEYS.bestRows);
             var n = raw == null ? NaN : parseInt(raw, 10);
             return isNaN(n) ? null : n;
         },
@@ -80,22 +99,10 @@
             return false;
         },
 
-        getSound: function () {
-            return localStorage.getItem(KEYS.sound) !== '0';
-        },
-        setSound: function (on) {
-            try {
-                localStorage.setItem(KEYS.sound, on ? '1' : '0');
-            } catch (e) { /* ignore */ }
-        },
-
-        getCellColors: function () {
-            return localStorage.getItem(KEYS.cellColors) !== '0';
-        },
-        setCellColors: function (on) {
-            try {
-                localStorage.setItem(KEYS.cellColors, on ? '1' : '0');
-            } catch (e) { /* ignore */ }
+        // Wipes statistics, achievements and records. Saved games and the
+        // settings are left alone.
+        resetProgress: function () {
+            [KEYS.bestRows, KEYS.stats, KEYS.achievements, KEYS.daily].forEach(remove);
         }
     };
 })(window.LG);

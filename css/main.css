@@ -1,5 +1,114 @@
+/* ===================================================================
+   Гра в числа — styles
+   Sections: tokens · base · top bar · board & cells · cell animations ·
+   combo/floaters · bottom bar · modals · victory · menu screen ·
+   settings/stats/achievements · toast/confetti · misc · reduced motion
+   =================================================================== */
+
+/* ------------------------------------------------------------------
+   1. Design tokens (light is the default, dark overrides below)
+   ------------------------------------------------------------------ */
+:root {
+    color-scheme: light;
+
+    --bg: #f3f5f7;
+    --surface: #ffffff;
+    --surface-2: #f4f6f8;
+    --text: #343a40;
+    --text-strong: #212529;
+    --muted: #6c757d;
+    --border: #e2e2e2;
+    --border-strong: #ced4da;
+    --hover: rgba(0, 0, 0, 0.05);
+    --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.06);
+    --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.16);
+    --overlay: rgba(0, 0, 0, 0.45);
+
+    --accent: #17a2b8;
+    --accent-hover: #148ea1;
+    --accent-soft: rgba(23, 162, 184, 0.14);
+    --danger: #e5484d;
+    --award: #f59f00;
+
+    --cell-bg: #ffffff;
+    --cell-border: #cccccc;
+    --cell-text: #434343;
+    --closed: #92c5a7;
+    --closed-rgb: 146, 197, 167;
+    --click-bg: rgba(146, 197, 167, 0.25);
+    --click-text: cadetblue;
+    --hint-bg: #fff3d6;
+    --hint-border: #ffa500;
+    --hint-text: #a15c00;
+
+    --g1-bg: #eaf2fb; --g1-bd: #c9def5;
+    --g2-bg: #eaf7ee; --g2-bd: #c8e6d2;
+    --g3-bg: #fff8e6; --g3-bd: #f5e5b8;
+    --g4-bg: #f5eafb; --g4-bd: #e0c9f2;
+    --g5-bg: #fdefe9; --g5-bd: #f3d9c9;
+
+    --preview-bg: #eaf6f9;
+    --preview-border: #b7e2ea;
+
+    --menu-bg: linear-gradient(160deg, #eaf6f9 0%, #f4f0fb 60%, #fdefe9 100%);
+
+    --bottom-bar-h: 56px; /* kept up to date from JS (preview.js) */
+}
+
+:root[data-theme="dark"] {
+    color-scheme: dark;
+
+    --bg: #12161b;
+    --surface: #1b2129;
+    --surface-2: #232b35;
+    --text: #d9dee4;
+    --text-strong: #f1f3f5;
+    --muted: #98a2ae;
+    --border: #2c3540;
+    --border-strong: #3a4552;
+    --hover: rgba(255, 255, 255, 0.07);
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.35);
+    --shadow-md: 0 8px 28px rgba(0, 0, 0, 0.55);
+    --overlay: rgba(0, 0, 0, 0.62);
+
+    --accent: #2bb8d0;
+    --accent-hover: #4ccbe0;
+    --accent-soft: rgba(43, 184, 208, 0.18);
+    --danger: #ff6b6f;
+
+    --cell-bg: #222a33;
+    --cell-border: #36414d;
+    --cell-text: #e8ebef;
+    --closed: #2f6b52;
+    --closed-rgb: 63, 140, 106;
+    --click-bg: rgba(63, 140, 106, 0.35);
+    --click-text: #9be3c0;
+    --hint-bg: #4a3a14;
+    --hint-border: #ffb020;
+    --hint-text: #ffd27a;
+
+    --g1-bg: #1e2f45; --g1-bd: #2f4a6b;
+    --g2-bg: #1d3a2b; --g2-bd: #2d5a42;
+    --g3-bg: #3c3320; --g3-bd: #5c4d2c;
+    --g4-bg: #342649; --g4-bd: #4e386d;
+    --g5-bg: #432a24; --g5-bd: #64403a;
+
+    --preview-bg: #17262b;
+    --preview-border: #2a4650;
+
+    --menu-bg: linear-gradient(160deg, #11202a 0%, #1a1730 60%, #2a1a1d 100%);
+}
+
+/* ------------------------------------------------------------------
+   2. Base
+   ------------------------------------------------------------------ */
 * {
     box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+[hidden] {
+    display: none !important;
 }
 
 html, body {
@@ -12,11 +121,24 @@ html, body {
 }
 
 body {
-    font-family: Roboto, sans-serif;
+    font-family: Roboto, "Segoe UI", system-ui, -apple-system, sans-serif;
+    color: var(--text);
+    background-color: var(--bg);
     /* Disables the double-tap-to-zoom gesture (tapping the bottom bar
        twice in quick succession was triggering it) while still allowing
        normal single taps and scrolling. */
     touch-action: manipulation;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+button {
+    font-family: inherit;
+}
+
+button:focus-visible,
+input:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
 }
 
 #field_game {
@@ -26,45 +148,63 @@ body {
     align-items: center;
     margin: 0 10px;
     user-select: none;
+    -webkit-user-select: none;
 }
 
 #field_game table {
     border-collapse: collapse;
 }
 
-/*
-  A slim strip fixed to the very top of the screen. It always shows the
-  running stats (they used to scroll away with the rest of the board once
-  it got tall), and it also hosts the "nearest active cells" preview as a
-  second row that expands into view only when needed — see
-  .top-bar__preview below. Kept as one element so its total on-screen
-  height (stats + preview, when shown) is easy to measure from JS in one
-  place for the "what's covered right now" calculation.
-*/
+/* ------------------------------------------------------------------
+   3. Top bar (stats) + pinned "nearest active cells" preview
+   ------------------------------------------------------------------ */
 .top-bar {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
     z-index: 30;
-    background-color: #ffffff;
-    border-bottom: 1px solid #e2e2e2;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+    background-color: var(--surface);
+    border-bottom: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+    transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .top-bar__stats {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 4px 14px;
-    padding: 7px 10px;
+    gap: 2px 18px;
+    padding: 6px 10px;
+    padding-top: calc(6px + env(safe-area-inset-top, 0px));
     font-size: 12px;
-    color: #6c757d;
+    color: var(--muted);
+}
+
+.top-bar__group {
+    display: flex;
+    justify-content: center;
+    align-items: baseline;
+    gap: 14px;
+}
+
+.top-bar__group--primary {
+    font-size: 13px;
+}
+
+.top-bar__group--secondary {
+    font-size: 11px;
 }
 
 .top-bar__stats strong {
-    color: #343a40;
+    color: var(--text-strong);
     font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.top-bar__icon {
+    margin-right: 3px;
+    opacity: 0.85;
 }
 
 /* Collapsed by default (max-height: 0) so it takes no space until there's
@@ -74,7 +214,7 @@ body {
     justify-content: center;
     max-height: 0;
     overflow: hidden;
-    background-color: #eaf6f9;
+    background-color: var(--preview-bg);
     transition: max-height 0.25s ease;
     pointer-events: none;
 }
@@ -101,18 +241,171 @@ body {
     max-width: 50px;
     height: calc((100vw - 60px) / 9);
     max-height: 50px;
-    border: 1px solid #b7e2ea;
+    border: 1px solid var(--preview-border);
     border-radius: 4px;
     margin: 2px;
     font-size: 18px;
     font-weight: 600;
-    color: #434343;
-    background-color: #ffffff;
+    color: var(--cell-text);
+    background-color: var(--cell-bg);
 }
 
 .pinned-row-preview__row td.empty-slot {
     border-color: transparent;
     background-color: transparent;
+}
+
+/* ------------------------------------------------------------------
+   4. Board & cells
+   ------------------------------------------------------------------ */
+#field_game td {
+    display: inline-flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: calc((100vw - 60px) / 9);
+    max-width: 50px;
+    /* min() rather than height + max-height so the *computed* height is the
+       on-screen size (table cells treat height as a minimum anyway). */
+    height: min(calc((100vw - 60px) / 9), 50px);
+    border: 1px solid var(--cell-border);
+    cursor: pointer;
+    border-radius: 4px;
+    margin: 2px;
+    color: var(--cell-text);
+    background-color: var(--cell-bg);
+    font-size: 20px;
+    font-weight: 600;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.25s ease, border-color 0.25s ease;
+}
+
+#field_game td:hover:not(.close-box) {
+    border-color: var(--closed);
+}
+
+#field_game td:active:not(.close-box) {
+    transform: scale(0.94);
+}
+
+/*
+  Soft background per "match group" — cells whose values could actually be
+  paired (equal, or summing to 10) share a colour. Declared right after the
+  base td rule (and before .close-box/.click-box/.hint-box) so those state
+  looks still win the cascade. Toggled purely by adding/removing the classes
+  from JS (the "Кольори клітинок" setting).
+*/
+#field_game .value-g1 { background-color: var(--g1-bg); border-color: var(--g1-bd); }
+#field_game .value-g2 { background-color: var(--g2-bg); border-color: var(--g2-bd); }
+#field_game .value-g3 { background-color: var(--g3-bg); border-color: var(--g3-bd); }
+#field_game .value-g4 { background-color: var(--g4-bg); border-color: var(--g4-bd); }
+#field_game .value-g5 { background-color: var(--g5-bg); border-color: var(--g5-bd); }
+
+#field_game .close-box {
+    background-color: var(--closed);
+    color: var(--closed);
+    animation: 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) close-box;
+    cursor: default;
+}
+
+#field_game .click-box {
+    background-color: var(--click-bg);
+    color: var(--click-text);
+    border-color: var(--closed);
+    box-shadow: 0 0 6px 2px rgba(var(--closed-rgb), 0.35);
+    transform: scale(1.08);
+}
+
+/* "Assist" setting: possible partners of the selected cell */
+#field_game .partner-box {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-soft), 0 0 10px 1px rgba(23, 162, 184, 0.35);
+    animation: 1.1s ease-in-out infinite alternate partner-glow;
+}
+
+/* Keyboard cursor */
+#field_game .kbd-cursor {
+    outline: 3px solid var(--accent);
+    outline-offset: 2px;
+    z-index: 2;
+}
+
+/* Hint: gently pulsing glow on the two cells the player is nudged toward */
+#field_game .hint-box {
+    background-color: var(--hint-bg);
+    border-color: var(--hint-border);
+    color: var(--hint-text);
+    animation: 0.9s ease-in-out infinite alternate hint-pulse;
+    z-index: 1;
+}
+
+/* ------------------------------------------------------------------
+   5. Cell / row animations
+   ------------------------------------------------------------------ */
+@keyframes close-box {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(var(--closed-rgb), 0.6);
+    }
+    45% {
+        transform: scale(1.22) rotate(4deg);
+        box-shadow: 0 0 12px 4px rgba(var(--closed-rgb), 0.45);
+    }
+    75% {
+        transform: scale(0.94) rotate(-2deg);
+    }
+    100% {
+        transform: scale(1) rotate(0deg);
+        box-shadow: 0 0 0 0 rgba(var(--closed-rgb), 0);
+    }
+}
+
+@keyframes hint-pulse {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(255, 165, 0, 0.45);
+    }
+    100% {
+        transform: scale(1.12);
+        box-shadow: 0 0 14px 5px rgba(255, 165, 0, 0.4);
+    }
+}
+
+@keyframes partner-glow {
+    0% { transform: scale(1); }
+    100% { transform: scale(1.06); }
+}
+
+/* Undo: brief highlight so the player notices what came back */
+#field_game .restore-highlight {
+    animation: 0.55s ease-out restore-pulse;
+}
+
+@keyframes restore-pulse {
+    0% {
+        transform: scale(1.25);
+        box-shadow: 0 0 10px 4px rgba(23, 162, 184, 0.55);
+        border-color: #17a2b8;
+    }
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(23, 162, 184, 0);
+    }
+}
+
+/* Rows fading/settling back in after an undo */
+#field_game .restore-row {
+    animation: 0.35s ease restore-row;
+}
+
+@keyframes restore-row {
+    0% {
+        opacity: 0;
+        transform: translateY(-6px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /*
@@ -152,569 +445,6 @@ body {
         opacity: 0;
     }
 }
-
-#field_game td {
-    display: inline-flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    width: calc((100vw - 60px) / 9);
-    max-width: 50px;
-    /* min() rather than height + max-height so the *computed* height is
-       already the on-screen size - the row-removal keyframe interpolates
-       height -> 0 from that real value, with no max-height clamp making the
-       collapse stall for the first third of the animation. */
-    height: min(calc((100vw - 60px) / 9), 50px);
-    border: 1px solid #cccccc;
-    cursor: pointer;
-    border-radius: 4px;
-    margin: 2px;
-    color: #434343;
-    background-color: #ffffff;
-    font-size: 20px;
-    font-weight: 600;
-    transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.25s ease, border-color 0.25s ease;
-}
-
-#field_game td:hover:not(.close-box) {
-    border-color: #92C5A7;
-}
-
-/*
-  Soft, calm background per "match group" — cells whose values could
-  actually be paired (equal, or summing to 10) share a color, so the
-  player can see at a glance what's compatible with what. Declared right
-  after the base td rule (and before .close-box/.click-box/.hint-box below)
-  so those state-based looks still win the cascade when a cell is also
-  closed/selected/hinted — being matched already or right now matters more
-  than its resting color. Toggled entirely via JS (colorizeCell/
-  colorizeAllCells add or strip these classes), so turning the setting off
-  just means the classes are absent, no override rules needed.
-*/
-#field_game .value-g1 {
-    background-color: #eaf2fb;
-    border-color: #c9def5;
-}
-
-#field_game .value-g2 {
-    background-color: #eaf7ee;
-    border-color: #c8e6d2;
-}
-
-#field_game .value-g3 {
-    background-color: #fff8e6;
-    border-color: #f5e5b8;
-}
-
-#field_game .value-g4 {
-    background-color: #f5eafb;
-    border-color: #e0c9f2;
-}
-
-#field_game .value-g5 {
-    background-color: #fdefe9;
-    border-color: #f3d9c9;
-}
-
-#field_game .close-box {
-    background-color: #92C5A7;
-    color: #92C5A7;
-    animation: 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) close-box;
-    cursor: default;
-}
-
-@keyframes close-box {
-    0% {
-        transform: scale(1);
-        box-shadow: 0 0 0 0 rgba(146, 197, 167, 0.6);
-    }
-    45% {
-        transform: scale(1.22) rotate(4deg);
-        box-shadow: 0 0 12px 4px rgba(146, 197, 167, 0.45);
-    }
-    75% {
-        transform: scale(0.94) rotate(-2deg);
-    }
-    100% {
-        transform: scale(1) rotate(0deg);
-        box-shadow: 0 0 0 0 rgba(146, 197, 167, 0);
-    }
-}
-
-#field_game .click-box {
-    background-color: #92C5A740;
-    color: cadetblue;
-    border-color: #92C5A7;
-    box-shadow: 0 0 6px 2px rgba(146, 197, 167, 0.35);
-    transform: scale(1.08);
-}
-
-/* Hint: gently pulsing glow on the two cells the player is nudged toward */
-#field_game .hint-box {
-    background-color: #FFF3D6;
-    border-color: #FFA500;
-    color: #a15c00;
-    animation: 0.9s ease-in-out infinite alternate hint-pulse;
-    z-index: 1;
-}
-
-@keyframes hint-pulse {
-    0% {
-        transform: scale(1);
-        box-shadow: 0 0 0 0 rgba(255, 165, 0, 0.45);
-    }
-    100% {
-        transform: scale(1.12);
-        box-shadow: 0 0 14px 5px rgba(255, 165, 0, 0.4);
-    }
-}
-
-/* Undo: brief highlight so the player notices what came back */
-#field_game .restore-highlight {
-    animation: 0.55s ease-out restore-pulse;
-}
-
-@keyframes restore-pulse {
-    0% {
-        transform: scale(1.25);
-        box-shadow: 0 0 10px 4px rgba(23, 162, 184, 0.55);
-        border-color: #17a2b8;
-    }
-    100% {
-        transform: scale(1);
-        box-shadow: 0 0 0 0 rgba(23, 162, 184, 0);
-    }
-}
-
-/* Rows fading/settling back in after an undo */
-#field_game .restore-row {
-    animation: 0.35s ease restore-row;
-}
-
-@keyframes restore-row {
-    0% {
-        opacity: 0;
-        transform: translateY(-6px);
-    }
-    100% {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-/*
-  Action bar fixed to the bottom of the screen, icon-first so six actions
-  fit comfortably on a phone without eating vertical space the way six
-  full-width text buttons used to. Each button keeps its original class
-  name (.rewrite-btn, .check-btn, ...) so the JS event listeners didn't
-  need to change at all.
-*/
-.bottom-bar {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    z-index: 30;
-    display: flex;
-    justify-content: space-around;
-    background-color: #ffffff;
-    border-top: 1px solid #e2e2e2;
-    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.08);
-    padding: 4px 2px;
-    padding-bottom: calc(4px + env(safe-area-inset-bottom, 0px));
-}
-
-.bottom-bar__btn {
-    flex: 1 1 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 2px;
-    background: none;
-    border: none;
-    outline: none;
-    padding: 6px 2px;
-    cursor: pointer;
-    border-radius: 8px;
-    color: #495057;
-    transition: background-color 0.15s ease, transform 0.1s ease;
-    touch-action: manipulation;
-}
-
-.bottom-bar__btn:hover {
-    background-color: rgba(0, 0, 0, 0.04);
-}
-
-.bottom-bar__btn:active {
-    transform: scale(0.92);
-    background-color: rgba(0, 0, 0, 0.07);
-}
-
-.bottom-bar__icon {
-    font-size: 20px;
-    line-height: 1;
-}
-
-.bottom-bar__label {
-    font-size: 10px;
-    white-space: nowrap;
-}
-
-/* Every action shares the same neutral, monochrome tone (matching what the
-   "Назад" arrow already looked like) instead of a different accent color
-   per button — keeps the bar calm and consistent. */
-.bottom-bar__btn {
-    color: #495057;
-}
-
-.bottom-bar__btn.menu-btn.is-open {
-    background-color: rgba(0, 0, 0, 0.07);
-    color: #212529;
-}
-
-/*
-  Overflow menu ("Ще") — a small popup anchored above the bar that holds
-  the less-frequently-used actions (Підказка, Відновити), so the main row
-  stays short. Positioned relative to .bottom-bar itself (which already
-  establishes the containing block via position: fixed).
-*/
-.overflow-menu {
-    position: absolute;
-    right: 6px;
-    bottom: 100%;
-    margin-bottom: 8px;
-    min-width: 170px;
-    display: flex;
-    flex-direction: column;
-    background-color: #ffffff;
-    border: 1px solid #e2e2e2;
-    border-radius: 10px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
-    overflow: hidden;
-    opacity: 0;
-    transform: translateY(6px) scale(0.98);
-    transform-origin: bottom right;
-    pointer-events: none;
-    transition: opacity 0.15s ease, transform 0.15s ease;
-}
-
-.overflow-menu.is-open {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-    pointer-events: auto;
-}
-
-.overflow-menu__item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 12px 14px;
-    background: none;
-    border: none;
-    outline: none;
-    font-size: 14px;
-    text-align: left;
-    color: #343a40;
-    cursor: pointer;
-    transition: background-color 0.15s ease;
-}
-
-.overflow-menu__item:hover {
-    background-color: #f1f3f5;
-}
-
-.overflow-menu__item + .overflow-menu__item {
-    border-top: 1px solid #eee;
-}
-
-.overflow-menu__icon {
-    width: 18px;
-    font-size: 15px;
-    text-align: center;
-    color: #6c757d;
-}
-
-/*
-  Confirmation popup — used before an action that could wipe out progress
-  (currently just "Відновити"), so an accidental tap can't cost the player
-  their board.
-*/
-.modal-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 50;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-    background-color: rgba(0, 0, 0, 0.45);
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.2s ease;
-}
-
-.modal-overlay.is-visible {
-    opacity: 1;
-    pointer-events: auto;
-}
-
-.modal-box {
-    width: 100%;
-    max-width: 320px;
-    padding: 20px;
-    border-radius: 10px;
-    background-color: #ffffff;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-    text-align: center;
-    transform: scale(0.94);
-    transition: transform 0.2s ease;
-}
-
-.modal-overlay.is-visible .modal-box {
-    transform: scale(1);
-}
-
-.modal-box__text {
-    margin: 0 0 16px;
-    color: #333;
-    font-size: 14px;
-    line-height: 1.4;
-}
-
-.modal-box__icon {
-    font-size: 38px;
-    line-height: 1;
-    margin-bottom: 10px;
-}
-
-.modal-box__actions {
-    display: flex;
-    gap: 10px;
-}
-
-.modal-box__actions--single {
-    justify-content: center;
-}
-
-.modal-box__actions--single .modal-box__btn {
-    flex: none;
-    min-width: 160px;
-}
-
-.modal-box__btn {
-    flex: 1;
-    padding: 10px 12px;
-    border-radius: 6px;
-    font-size: 14px;
-    cursor: pointer;
-    outline: none;
-    transition: background-color 0.15s ease;
-}
-
-.modal-box__btn--cancel {
-    border: 1px solid #ced4da;
-    color: #495057;
-    background-color: #ffffff;
-}
-
-.modal-box__btn--cancel:hover {
-    background-color: #f1f3f5;
-}
-
-.modal-box__btn--confirm {
-    border: 1px solid #17a2b8;
-    color: #ffffff;
-    background-color: #17a2b8;
-}
-
-.modal-box__btn--confirm:hover {
-    background-color: #148ea1;
-}
-
-/* ===================================================================
-   Main menu screen
-   =================================================================== */
-.screen {
-    position: fixed;
-    inset: 0;
-    z-index: 60;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 24px;
-    background: linear-gradient(160deg, #eaf6f9 0%, #f4f0fb 60%, #fdefe9 100%);
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.25s ease;
-}
-
-.screen.is-visible {
-    opacity: 1;
-    pointer-events: auto;
-}
-
-.screen__panel {
-    width: 100%;
-    max-width: 360px;
-    text-align: center;
-    transform: translateY(14px) scale(0.97);
-    transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.screen.is-visible .screen__panel {
-    transform: translateY(0) scale(1);
-}
-
-.screen__title {
-    margin: 0 0 4px;
-    font-size: 30px;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-    color: #2f4858;
-}
-
-.screen__record {
-    margin: 0 0 22px;
-    font-size: 13px;
-    color: #6c757d;
-}
-
-.screen__actions {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.menu-btn-lg {
-    width: 100%;
-    padding: 14px 16px;
-    border: 1px solid #d5e3e6;
-    border-radius: 12px;
-    background-color: #ffffff;
-    color: #2f4858;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-    box-shadow: 0 2px 8px rgba(47, 72, 88, 0.08);
-    transition: transform 0.12s ease, box-shadow 0.15s ease, background-color 0.15s ease, opacity 0.15s ease;
-}
-
-.menu-btn-lg:hover {
-    background-color: #f6fbfc;
-}
-
-.menu-btn-lg:active {
-    transform: scale(0.97);
-}
-
-.menu-btn-lg--primary {
-    border-color: #17a2b8;
-    background-color: #17a2b8;
-    color: #ffffff;
-    box-shadow: 0 4px 14px rgba(23, 162, 184, 0.32);
-}
-
-.menu-btn-lg--primary:hover {
-    background-color: #148ea1;
-}
-
-.menu-btn-lg--toggle {
-    font-size: 14px;
-    font-weight: 500;
-    color: #495057;
-}
-
-.menu-btn-lg--ghost {
-    border-style: dashed;
-    background-color: transparent;
-    box-shadow: none;
-    font-size: 14px;
-    font-weight: 500;
-    color: #6c757d;
-}
-
-.menu-btn-lg.is-disabled,
-.menu-btn-lg:disabled {
-    opacity: 0.45;
-    cursor: not-allowed;
-    box-shadow: none;
-}
-
-.screen__rules {
-    max-height: 0;
-    overflow: hidden;
-    text-align: left;
-    font-size: 13px;
-    line-height: 1.5;
-    color: #52616b;
-    transition: max-height 0.3s ease, margin-top 0.3s ease;
-}
-
-.screen__rules.is-open {
-    max-height: 420px;
-    margin-top: 14px;
-}
-
-.screen__rules p {
-    margin: 0 0 8px;
-}
-
-/* ===================================================================
-   Lightweight toast (replaces toastr)
-   =================================================================== */
-.lg-toast-host {
-    position: fixed;
-    top: 14px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 80;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-    pointer-events: none;
-}
-
-.lg-toast {
-    max-width: 88vw;
-    padding: 10px 18px;
-    border-radius: 999px;
-    font-size: 13px;
-    font-weight: 600;
-    color: #ffffff;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
-    opacity: 0;
-    transform: translateY(-10px) scale(0.96);
-    transition: opacity 0.2s ease, transform 0.2s ease;
-}
-
-.lg-toast.is-in {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-}
-
-.lg-toast--success {
-    background-color: #43aa8b;
-}
-
-.lg-toast--warning {
-    background-color: #e0a800;
-}
-
-/* ===================================================================
-   Confetti canvas (victory)
-   =================================================================== */
-.confetti-canvas {
-    position: fixed;
-    inset: 0;
-    z-index: 70;
-    pointer-events: none;
-}
-
-/* ===================================================================
-   Extra animations
-   =================================================================== */
 
 /* Wrong partner: quick horizontal shake. */
 #field_game .shake {
@@ -758,19 +488,366 @@ body {
 
 @keyframes stat-pop {
     0% { transform: scale(1); }
-    45% { transform: scale(1.35); color: #17a2b8; }
+    45% { transform: scale(1.35); color: var(--accent); }
     100% { transform: scale(1); }
 }
 
-/* Victory modal: a livelier entrance than the plain scale. */
-#victory_modal.is-visible .modal-box {
-    animation: 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) victory-pop;
+/* ------------------------------------------------------------------
+   6. Combo chip & floating score text
+   ------------------------------------------------------------------ */
+.combo-chip {
+    position: fixed;
+    left: 12px;
+    bottom: calc(var(--bottom-bar-h) + 12px);
+    z-index: 28;
+    min-width: 108px;
+    padding: 7px 12px 9px;
+    border-radius: 14px;
+    color: #fff;
+    background: linear-gradient(135deg, #ff922b, #f03e3e);
+    box-shadow: 0 6px 18px rgba(240, 62, 62, 0.35);
+    opacity: 0;
+    transform: translateY(10px) scale(0.9);
+    transform-origin: left bottom;
+    transition: opacity 0.2s ease, transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    pointer-events: none;
 }
 
-@keyframes victory-pop {
-    0% { transform: scale(0.6) rotate(-6deg); opacity: 0; }
-    60% { transform: scale(1.08) rotate(3deg); opacity: 1; }
-    100% { transform: scale(1) rotate(0deg); }
+.combo-chip.is-visible {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+}
+
+.combo-chip__label {
+    display: block;
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 0.3px;
+}
+
+.combo-chip__track {
+    display: block;
+    height: 4px;
+    margin-top: 5px;
+    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.3);
+    overflow: hidden;
+}
+
+.combo-chip__bar {
+    display: block;
+    height: 100%;
+    background: #fff;
+    transform-origin: left center;
+}
+
+.combo-chip.combo-bump {
+    animation: 0.36s ease combo-bump;
+}
+
+@keyframes combo-drain {
+    from { transform: scaleX(1); }
+    to { transform: scaleX(0); }
+}
+
+@keyframes combo-bump {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.18) rotate(-2deg); }
+    100% { transform: scale(1); }
+}
+
+.floater {
+    position: fixed;
+    z-index: 75;
+    transform: translate(-50%, -50%);
+    font-size: 19px;
+    font-weight: 800;
+    color: var(--accent);
+    text-shadow: 0 1px 0 var(--surface), 0 0 8px var(--surface);
+    pointer-events: none;
+    white-space: nowrap;
+    animation: 1s ease-out forwards float-up;
+}
+
+.floater--combo {
+    font-size: 15px;
+    color: #f76707;
+}
+
+.floater--row {
+    color: #2f9e44;
+    font-size: 22px;
+}
+
+@keyframes float-up {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -30%) scale(0.6);
+    }
+    18% {
+        opacity: 1;
+        transform: translate(-50%, -70%) scale(1.15);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -210%) scale(1);
+    }
+}
+
+/* ------------------------------------------------------------------
+   7. Bottom action bar + overflow menu
+   ------------------------------------------------------------------ */
+.bottom-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 30;
+    display: flex;
+    justify-content: space-around;
+    background-color: var(--surface);
+    border-top: 1px solid var(--border);
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.08);
+    padding: 4px 2px;
+    padding-bottom: calc(4px + env(safe-area-inset-bottom, 0px));
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.bottom-bar__btn {
+    flex: 1 1 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    background: none;
+    border: none;
+    padding: 6px 2px;
+    cursor: pointer;
+    border-radius: 8px;
+    color: var(--text);
+    transition: background-color 0.15s ease, transform 0.1s ease, color 0.2s ease;
+    touch-action: manipulation;
+}
+
+.bottom-bar__btn:hover {
+    background-color: var(--hover);
+}
+
+.bottom-bar__btn:active {
+    transform: scale(0.92);
+    background-color: var(--hover);
+}
+
+.bottom-bar__icon {
+    font-size: 20px;
+    line-height: 1;
+}
+
+.bottom-bar__label {
+    font-size: 10px;
+    white-space: nowrap;
+}
+
+.bottom-bar__btn.menu-btn.is-open {
+    background-color: var(--hover);
+    color: var(--text-strong);
+}
+
+/* No moves left: "Дописати" pulses to point at the next step. */
+.bottom-bar__btn.is-stuck {
+    color: var(--accent);
+    background-color: var(--accent-soft);
+    animation: 1.4s ease-in-out infinite stuck-pulse;
+}
+
+@keyframes stuck-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(23, 162, 184, 0.45); }
+    50% { box-shadow: 0 0 0 7px rgba(23, 162, 184, 0); transform: scale(1.06); }
+}
+
+.overflow-menu {
+    position: absolute;
+    right: 6px;
+    bottom: 100%;
+    margin-bottom: 8px;
+    min-width: 200px;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+    transform-origin: bottom right;
+    pointer-events: none;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.overflow-menu.is-open {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+}
+
+.overflow-menu__item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    background: none;
+    border: none;
+    font-size: 14px;
+    text-align: left;
+    color: var(--text);
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.overflow-menu__item:hover {
+    background-color: var(--hover);
+}
+
+.overflow-menu__item + .overflow-menu__item {
+    border-top: 1px solid var(--border);
+}
+
+.overflow-menu__icon {
+    width: 18px;
+    font-size: 15px;
+    text-align: center;
+    color: var(--muted);
+}
+
+/* ------------------------------------------------------------------
+   8. Modals (confirm + victory)
+   ------------------------------------------------------------------ */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    overflow-y: auto;
+    background-color: var(--overlay);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+}
+
+/* above the full-screen menu */
+.modal-overlay--top {
+    z-index: 85;
+}
+
+.modal-overlay.is-visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.modal-box {
+    width: 100%;
+    max-width: 320px;
+    margin: auto;
+    padding: 20px;
+    border-radius: 14px;
+    background-color: var(--surface);
+    color: var(--text);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+    text-align: center;
+    transform: scale(0.94);
+    transition: transform 0.2s ease;
+}
+
+.modal-overlay.is-visible .modal-box {
+    transform: scale(1);
+}
+
+.modal-box__text {
+    margin: 0 0 16px;
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.modal-box__icon {
+    font-size: 42px;
+    line-height: 1;
+    margin-bottom: 8px;
+}
+
+.modal-box__actions {
+    display: flex;
+    gap: 10px;
+}
+
+.modal-box__btn {
+    flex: 1;
+    padding: 11px 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.15s ease, transform 0.1s ease;
+}
+
+.modal-box__btn:active {
+    transform: scale(0.97);
+}
+
+.modal-box__btn--cancel {
+    border: 1px solid var(--border-strong);
+    color: var(--text);
+    background-color: var(--surface);
+}
+
+.modal-box__btn--cancel:hover {
+    background-color: var(--hover);
+}
+
+.modal-box__btn--confirm {
+    border: 1px solid var(--accent);
+    color: #ffffff;
+    background-color: var(--accent);
+}
+
+.modal-box__btn--confirm:hover {
+    background-color: var(--accent-hover);
+}
+
+.modal-box__btn--danger {
+    border-color: var(--danger);
+    background-color: var(--danger);
+}
+
+.modal-box__btn--danger:hover {
+    background-color: var(--danger);
+    filter: brightness(1.08);
+}
+
+.modal-box__btn--ghost {
+    border: 1px solid transparent;
+    color: var(--muted);
+    background: none;
+}
+
+.modal-box__btn--ghost:hover {
+    background-color: var(--hover);
+}
+
+/* ------------------------------------------------------------------
+   9. Victory popup
+   ------------------------------------------------------------------ */
+.modal-box--victory {
+    max-width: 380px;
+}
+
+#victory_modal.is-visible .modal-box {
+    animation: 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) victory-pop;
 }
 
 #victory_modal.is-visible .modal-box__icon {
@@ -778,17 +855,776 @@ body {
     animation: 0.9s ease-in-out 0.2s infinite alternate trophy-bob;
 }
 
+.victory__title {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--text-strong);
+}
+
+.victory__sub {
+    margin: 4px 0 12px;
+    font-size: 13px;
+    color: var(--muted);
+}
+
+.victory__badge,
+.victory__streak {
+    display: inline-block;
+    margin: 0 0 12px;
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.victory__badge {
+    color: #7a4d00;
+    background: linear-gradient(120deg, #ffe066, #ffc53d, #ffe066);
+    background-size: 200% 100%;
+    animation: 2.2s linear infinite badge-shimmer;
+}
+
+.victory__streak {
+    display: block;
+    width: fit-content;
+    margin-left: auto;
+    margin-right: auto;
+    color: #c2410c;
+    background: rgba(255, 146, 43, 0.16);
+}
+
+.victory__grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 8px;
+    margin-bottom: 14px;
+}
+
+.victory__stat {
+    position: relative;
+    padding: 10px 6px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background-color: var(--surface-2);
+}
+
+.victory__stat--third {
+    grid-column: span 2;
+}
+
+.victory__stat--half {
+    grid-column: span 3;
+}
+
+.victory__stat.is-best {
+    border-color: var(--award);
+    background-color: rgba(245, 159, 0, 0.1);
+}
+
+.victory__stat.is-best::after {
+    content: "★";
+    position: absolute;
+    top: 3px;
+    right: 6px;
+    font-size: 11px;
+    color: var(--award);
+    animation: 1.2s ease-in-out infinite alternate star-twinkle;
+}
+
+.victory__value {
+    display: block;
+    font-size: 21px;
+    font-weight: 800;
+    color: var(--text-strong);
+    font-variant-numeric: tabular-nums;
+}
+
+.victory__label {
+    display: block;
+    margin-top: 2px;
+    font-size: 11px;
+    color: var(--muted);
+}
+
+.victory__ach {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 168px;
+    margin-bottom: 14px;
+    padding-right: 2px;
+    overflow-y: auto;
+    text-align: left;
+}
+
+.victory__chip {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border: 1px solid var(--award);
+    border-radius: 12px;
+    background-color: rgba(245, 159, 0, 0.1);
+    animation: 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both chip-in;
+}
+
+.victory__chip-icon {
+    font-size: 24px;
+}
+
+.victory__chip-text strong {
+    display: block;
+    font-size: 13px;
+    color: var(--text-strong);
+}
+
+.victory__chip-text small {
+    font-size: 11px;
+    color: var(--muted);
+}
+
+.victory__actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+@keyframes victory-pop {
+    0% { transform: scale(0.6) rotate(-6deg); opacity: 0; }
+    60% { transform: scale(1.06) rotate(2deg); opacity: 1; }
+    100% { transform: scale(1) rotate(0deg); }
+}
+
 @keyframes trophy-bob {
     0% { transform: translateY(0) rotate(-4deg); }
     100% { transform: translateY(-6px) rotate(4deg); }
 }
 
+@keyframes badge-shimmer {
+    from { background-position: 0% 0; }
+    to { background-position: 200% 0; }
+}
+
+@keyframes star-twinkle {
+    from { opacity: 0.5; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1.25); }
+}
+
+@keyframes chip-in {
+    from { opacity: 0; transform: translateX(-16px) scale(0.9); }
+    to { opacity: 1; transform: translateX(0) scale(1); }
+}
+
+/* ------------------------------------------------------------------
+   10. Menu screen (main view + sub-views)
+   ------------------------------------------------------------------ */
+.screen {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    display: flex;
+    padding: 24px;
+    overflow-y: auto;
+    background: var(--menu-bg);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+}
+
+.screen.is-visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.screen__bg {
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.bg-digit {
+    position: absolute;
+    bottom: -80px;
+    font-weight: 800;
+    color: var(--accent);
+    opacity: 0.09;
+    animation: linear infinite bg-rise;
+}
+
+@keyframes bg-rise {
+    from { transform: translateY(0) rotate(0deg); }
+    to { transform: translateY(-125vh) rotate(28deg); }
+}
+
+.screen__panel {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 380px;
+    margin: auto;
+    text-align: center;
+    transform: translateY(14px) scale(0.97);
+    transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.screen.is-visible .screen__panel {
+    transform: translateY(0) scale(1);
+}
+
+.view {
+    display: none;
+}
+
+.view.is-active {
+    display: block;
+    animation: 0.28s ease both view-in;
+}
+
+@keyframes view-in {
+    from { opacity: 0; transform: translateX(18px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+.screen__title {
+    margin: 0 0 4px;
+    font-size: 32px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    color: var(--text-strong);
+}
+
+.screen__record {
+    margin: 0 0 20px;
+    font-size: 13px;
+    color: var(--muted);
+}
+
+.screen__actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.menu-row {
+    display: flex;
+    gap: 10px;
+}
+
+.menu-btn-lg {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    width: 100%;
+    padding: 14px 16px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background-color: var(--surface);
+    color: var(--text-strong);
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(47, 72, 88, 0.1);
+    transition: transform 0.12s ease, box-shadow 0.15s ease, background-color 0.15s ease, opacity 0.15s ease;
+}
+
+.menu-btn-lg:hover {
+    background-color: var(--surface-2);
+}
+
+.menu-btn-lg:active {
+    transform: scale(0.97);
+}
+
+.menu-btn-lg__sub {
+    font-size: 12px;
+    font-weight: 500;
+    opacity: 0.75;
+}
+
+.menu-btn-lg--primary {
+    border-color: var(--accent);
+    background-color: var(--accent);
+    color: #ffffff;
+    box-shadow: 0 4px 14px rgba(23, 162, 184, 0.34);
+}
+
+.menu-btn-lg--primary:hover {
+    background-color: var(--accent-hover);
+}
+
+.menu-btn-lg--daily {
+    border-color: rgba(245, 159, 0, 0.55);
+    background-image: linear-gradient(135deg, rgba(245, 159, 0, 0.14), rgba(250, 82, 82, 0.08));
+}
+
+.menu-btn-lg__dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    margin-left: 6px;
+    border-radius: 50%;
+    background-color: #fa5252;
+    vertical-align: middle;
+    animation: 1.6s ease-in-out infinite dot-pulse;
+}
+
+@keyframes dot-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(250, 82, 82, 0.55); }
+    50% { box-shadow: 0 0 0 6px rgba(250, 82, 82, 0); }
+}
+
+.menu-btn-lg--small {
+    flex: 1;
+    padding: 12px 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+}
+
+.menu-btn-lg--ghost {
+    border-style: dashed;
+    background-color: transparent;
+    box-shadow: none;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--muted);
+}
+
+.menu-btn-lg--danger {
+    margin-top: 6px;
+    font-size: 14px;
+    color: var(--danger);
+    border-color: rgba(229, 72, 77, 0.45);
+    box-shadow: none;
+}
+
+.menu-btn-lg:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+/* sub-view header */
+.view__head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+    text-align: left;
+}
+
+.view__head h2 {
+    margin: 0;
+    font-size: 21px;
+    font-weight: 800;
+    color: var(--text-strong);
+}
+
+.view__count {
+    margin-left: auto;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--accent);
+    background-color: var(--accent-soft);
+}
+
+.view-back {
+    flex: none;
+    width: 38px;
+    height: 38px;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    background-color: var(--surface);
+    color: var(--text-strong);
+    font-size: 18px;
+    cursor: pointer;
+    transition: transform 0.12s ease, background-color 0.15s ease;
+}
+
+.view-back:hover {
+    background-color: var(--surface-2);
+}
+
+.view-back:active {
+    transform: scale(0.9);
+}
+
+/* ------------------------------------------------------------------
+   11. Settings / statistics / achievements / rules
+   ------------------------------------------------------------------ */
+.settings-list {
+    text-align: left;
+}
+
+.setting-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background-color: var(--surface);
+}
+
+.setting-row--col {
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.setting-row__text strong {
+    display: block;
+    font-size: 14px;
+    color: var(--text-strong);
+}
+
+.setting-row__text small {
+    display: block;
+    margin-top: 2px;
+    font-size: 12px;
+    line-height: 1.3;
+    color: var(--muted);
+}
+
+.switch {
+    position: relative;
+    flex: none;
+    width: 46px;
+    height: 26px;
+    padding: 0;
+    border: none;
+    border-radius: 999px;
+    background-color: var(--border-strong);
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.switch__knob {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background-color: #ffffff;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.switch[aria-checked="true"] {
+    background-color: var(--accent);
+}
+
+.switch[aria-checked="true"] .switch__knob {
+    transform: translateX(20px);
+}
+
+.range {
+    --fill: 60%;
+    width: 100%;
+    height: 6px;
+    margin: 8px 0 4px;
+    border-radius: 3px;
+    background: linear-gradient(to right, var(--accent) var(--fill), var(--border-strong) var(--fill));
+    -webkit-appearance: none;
+    appearance: none;
+    outline-offset: 6px;
+}
+
+.range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 22px;
+    height: 22px;
+    border: 3px solid var(--accent);
+    border-radius: 50%;
+    background-color: #ffffff;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+    cursor: pointer;
+}
+
+.range::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border: 3px solid var(--accent);
+    border-radius: 50%;
+    background-color: #ffffff;
+    cursor: pointer;
+}
+
+.segmented {
+    display: flex;
+    margin-top: 8px;
+    padding: 3px;
+    border-radius: 10px;
+    background-color: var(--surface-2);
+}
+
+.segmented button {
+    flex: 1;
+    padding: 8px 4px;
+    border: none;
+    border-radius: 8px;
+    background: none;
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.segmented button.is-active {
+    background-color: var(--surface);
+    color: var(--accent);
+    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.18);
+}
+
+/* statistics */
+.stat-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.stat-card {
+    padding: 10px 8px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background-color: var(--surface);
+}
+
+.stat-card__value {
+    display: block;
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--text-strong);
+    font-variant-numeric: tabular-nums;
+}
+
+.stat-card__label {
+    display: block;
+    margin-top: 2px;
+    font-size: 11px;
+    color: var(--muted);
+}
+
+.mode-table {
+    margin-bottom: 12px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background-color: var(--surface);
+    overflow: hidden;
+    font-size: 13px;
+}
+
+.mode-table__row {
+    display: grid;
+    grid-template-columns: 1.4fr 0.9fr 0.9fr 1fr;
+    gap: 6px;
+    padding: 9px 12px;
+    text-align: left;
+    font-variant-numeric: tabular-nums;
+}
+
+.mode-table__row + .mode-table__row {
+    border-top: 1px solid var(--border);
+}
+
+.mode-table__row--head {
+    font-size: 11px;
+    color: var(--muted);
+    background-color: var(--surface-2);
+}
+
+.streak-box {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border: 1px solid rgba(245, 159, 0, 0.5);
+    border-radius: 12px;
+    background-color: rgba(245, 159, 0, 0.08);
+    text-align: left;
+}
+
+.streak-box__flame {
+    font-size: 28px;
+}
+
+.streak-box__text strong {
+    display: block;
+    font-size: 14px;
+    color: var(--text-strong);
+}
+
+.streak-box__text small {
+    font-size: 12px;
+    color: var(--muted);
+}
+
+/* achievements */
+.ach-list {
+    text-align: left;
+}
+
+.ach-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background-color: var(--surface);
+    opacity: 0.6;
+}
+
+.ach-card.is-unlocked {
+    opacity: 1;
+    border-color: var(--award);
+    background-color: rgba(245, 159, 0, 0.08);
+}
+
+.ach-card__icon {
+    flex: none;
+    width: 38px;
+    font-size: 28px;
+    text-align: center;
+}
+
+.ach-card__text strong {
+    display: block;
+    font-size: 14px;
+    color: var(--text-strong);
+}
+
+.ach-card__text small {
+    display: block;
+    font-size: 12px;
+    color: var(--muted);
+}
+
+.ach-card__text em {
+    display: block;
+    margin-top: 2px;
+    font-size: 11px;
+    font-style: normal;
+    color: var(--award);
+}
+
+/* rules */
+.rules {
+    text-align: left;
+    font-size: 13.5px;
+    line-height: 1.55;
+    color: var(--text);
+}
+
+.rules p {
+    margin: 0 0 10px;
+}
+
+.rules h3 {
+    margin: 14px 0 6px;
+    font-size: 14px;
+    color: var(--text-strong);
+}
+
+.rules kbd {
+    display: inline-block;
+    min-width: 22px;
+    margin: 0 2px;
+    padding: 1px 6px;
+    border: 1px solid var(--border-strong);
+    border-bottom-width: 2px;
+    border-radius: 5px;
+    background-color: var(--surface);
+    font-family: inherit;
+    font-size: 12px;
+    text-align: center;
+}
+
+/* ------------------------------------------------------------------
+   12. Toast & confetti
+   ------------------------------------------------------------------ */
+.lg-toast-host {
+    position: fixed;
+    top: calc(var(--stats-h, 34px) + 10px);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 90;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    pointer-events: none;
+}
+
+.lg-toast {
+    max-width: 88vw;
+    padding: 10px 18px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #ffffff;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.22);
+    opacity: 0;
+    transform: translateY(-10px) scale(0.96);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.lg-toast.is-in {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+}
+
+.lg-toast--success {
+    background-color: #43aa8b;
+}
+
+.lg-toast--warning {
+    background-color: #e0a800;
+}
+
+.lg-toast--award {
+    color: #4a2e00;
+    background: linear-gradient(120deg, #ffe066, #ffc53d);
+}
+
+.confetti-canvas {
+    position: fixed;
+    inset: 0;
+    z-index: 88;
+    pointer-events: none;
+}
+
+/* ------------------------------------------------------------------
+   13. Reduced motion
+   ------------------------------------------------------------------ */
 @media (prefers-reduced-motion: reduce) {
     #field_game .row-enter td,
     #field_game .shake,
+    #field_game .partner-box,
     .top-bar__stat strong.stat-pop,
+    .bottom-bar__btn.is-stuck,
+    .bg-digit,
+    .menu-btn-lg__dot,
+    .victory__badge,
+    .victory__stat.is-best::after,
     #victory_modal.is-visible .modal-box,
-    #victory_modal.is-visible .modal-box__icon {
+    #victory_modal.is-visible .modal-box__icon,
+    .view.is-active {
         animation: none !important;
+    }
+
+    .floater {
+        animation-duration: 0.01s !important;
     }
 }

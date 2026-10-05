@@ -1,41 +1,163 @@
 <!doctype html>
-<html lang="ua">
+<html lang="uk">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport"
-          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, viewport-fit=cover">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta name="theme-color" content="#f3f5f7">
+    <meta name="description" content="Гра в числа: закривайте пари сусідніх клітинок, що дають 10 або однакові.">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Гра в числа">
+    <link rel="manifest" href="./manifest.webmanifest">
     <link rel="shortcut icon" href="./images/favicon.png" type="image/x-icon">
+    <link rel="apple-touch-icon" href="./images/icon-180.png">
+    <!-- Apply the saved theme before first paint so there is no light flash. -->
+    <script>
+        (function () {
+            try {
+                var s = JSON.parse(localStorage.getItem('lg.settings') || '{}');
+                var dark = window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches;
+                var useDark = s.theme === 'dark' || (s.theme !== 'light' && dark);
+                document.documentElement.setAttribute('data-theme', useDark ? 'dark' : 'light');
+            } catch (e) { /* ignore */ }
+        })();
+    </script>
     <link rel="stylesheet" href="./css/main.css">
     <title>Гра в числа</title>
 </head>
 <body>
 
-<!-- Main menu, shown on load and reachable again from the bottom bar's
-     "Головне меню" item or after a win. -->
-<div class="screen" id="main_menu">
+<!-- ===================================================================
+     Main menu (+ Settings / Statistics / Achievements / Rules sub-views).
+     Shown on load, from the bottom bar's "Головне меню" and after a win.
+     =================================================================== -->
+<div class="screen" id="main_menu" role="dialog" aria-modal="true" aria-label="Меню">
+    <div class="screen__bg" id="menu_bg" aria-hidden="true"></div>
+
     <div class="screen__panel">
-        <h1 class="screen__title">Гра&nbsp;в&nbsp;числа</h1>
-        <p class="screen__record" id="menu_record">Рекорд: ще не встановлений</p>
 
-        <div class="screen__actions">
-            <button class="menu-btn-lg menu-btn-lg--primary" id="menu_continue">Продовжити гру</button>
-            <button class="menu-btn-lg" id="menu_new">Нова гра</button>
-            <button class="menu-btn-lg" id="menu_random">Згенерувати рівень</button>
-            <button class="menu-btn-lg menu-btn-lg--toggle" id="menu_sound">Звук: увімкнено</button>
-            <button class="menu-btn-lg menu-btn-lg--toggle" id="menu_colors">Кольори клітинок: увімкнено</button>
-            <button class="menu-btn-lg menu-btn-lg--ghost" id="menu_rules">Як грати</button>
-        </div>
+        <!-- main -->
+        <section class="view is-active" data-view="main">
+            <h1 class="screen__title">Гра&nbsp;в&nbsp;числа</h1>
+            <p class="screen__record" id="menu_record">Рекорд: ще не встановлений</p>
 
-        <div class="screen__rules" id="menu_rules_box">
-            <p>Числа від 1 до 19 (без 10) записані в дев'ять колонок.</p>
-            <p>Закривайте пари сусідніх клітинок по горизонталі чи вертикалі, якщо числа
-                однакові або дають у сумі 10. Сусідніми також вважаються кінець одного рядка
-                та початок наступного.</p>
-            <p>Коли ходів не лишилось — тисніть «Дописати»: незакриті числа допишуться в нові рядки.</p>
-            <p>Мета — закрити все поле. У «Рекорд» зберігається найменша кількість рядків,
-                за яку це вдалося зробити.</p>
-        </div>
+            <div class="screen__actions">
+                <button class="menu-btn-lg menu-btn-lg--primary" id="menu_continue" hidden>
+                    <span class="menu-btn-lg__title">Продовжити гру</span>
+                    <span class="menu-btn-lg__sub" id="menu_continue_sub"></span>
+                </button>
+                <button class="menu-btn-lg" id="menu_new">
+                    <span class="menu-btn-lg__title">Нова гра</span>
+                </button>
+                <button class="menu-btn-lg" id="menu_random">
+                    <span class="menu-btn-lg__title">Згенерувати рівень</span>
+                </button>
+                <button class="menu-btn-lg menu-btn-lg--daily" id="menu_daily">
+                    <span class="menu-btn-lg__title">Щоденний виклик
+                        <i class="menu-btn-lg__dot" id="menu_daily_dot" aria-label="Новий"></i></span>
+                    <span class="menu-btn-lg__sub" id="menu_daily_sub"></span>
+                </button>
+
+                <div class="menu-row">
+                    <button class="menu-btn-lg menu-btn-lg--small" id="menu_sound">🔊 Звук: увімкнено</button>
+                    <button class="menu-btn-lg menu-btn-lg--small" id="menu_settings">⚙️ Налаштування</button>
+                </div>
+                <div class="menu-row">
+                    <button class="menu-btn-lg menu-btn-lg--small" id="menu_stats">📊 Статистика</button>
+                    <button class="menu-btn-lg menu-btn-lg--small" id="menu_achievements">🏅 Досягнення</button>
+                </div>
+                <button class="menu-btn-lg menu-btn-lg--ghost" id="menu_rules">Як грати</button>
+            </div>
+        </section>
+
+        <!-- settings -->
+        <section class="view" data-view="settings">
+            <header class="view__head">
+                <button class="view-back" aria-label="Назад">←</button>
+                <h2>Налаштування</h2>
+            </header>
+
+            <div class="settings-list">
+                <div class="setting-row">
+                    <div class="setting-row__text"><strong>Звук</strong><small>Ефекти та мелодії</small></div>
+                    <button class="switch" role="switch" data-setting="sound" aria-checked="true"><span class="switch__knob"></span></button>
+                </div>
+                <div class="setting-row setting-row--col">
+                    <div class="setting-row__text"><strong>Гучність</strong></div>
+                    <input class="range" id="set_volume" type="range" min="0" max="100" step="5" value="60" aria-label="Гучність">
+                </div>
+                <div class="setting-row">
+                    <div class="setting-row__text"><strong>Вібрація</strong><small>Відгук на телефоні</small></div>
+                    <button class="switch" role="switch" data-setting="vibration" aria-checked="true"><span class="switch__knob"></span></button>
+                </div>
+                <div class="setting-row">
+                    <div class="setting-row__text"><strong>Кольори клітинок</strong><small>Пари, що підходять одна одній, мають однаковий відтінок</small></div>
+                    <button class="switch" role="switch" data-setting="cellColors" aria-checked="true"><span class="switch__knob"></span></button>
+                </div>
+                <div class="setting-row">
+                    <div class="setting-row__text"><strong>Підсвічувати пари</strong><small>Показувати можливих партнерів вибраної клітинки</small></div>
+                    <button class="switch" role="switch" data-setting="assist" aria-checked="false"><span class="switch__knob"></span></button>
+                </div>
+                <div class="setting-row setting-row--col">
+                    <div class="setting-row__text"><strong>Тема</strong></div>
+                    <div class="segmented" role="group" aria-label="Тема">
+                        <button data-theme-opt="auto">Авто</button>
+                        <button data-theme-opt="light">Світла</button>
+                        <button data-theme-opt="dark">Темна</button>
+                    </div>
+                </div>
+                <button class="menu-btn-lg menu-btn-lg--danger" id="set_reset">Скинути статистику та рекорд</button>
+            </div>
+        </section>
+
+        <!-- statistics -->
+        <section class="view" data-view="stats">
+            <header class="view__head">
+                <button class="view-back" aria-label="Назад">←</button>
+                <h2>Статистика</h2>
+            </header>
+            <div id="stats_body"></div>
+        </section>
+
+        <!-- achievements -->
+        <section class="view" data-view="achievements">
+            <header class="view__head">
+                <button class="view-back" aria-label="Назад">←</button>
+                <h2>Досягнення</h2>
+                <span class="view__count" id="ach_count">0 / 0</span>
+            </header>
+            <div class="ach-list" id="ach_body"></div>
+        </section>
+
+        <!-- rules -->
+        <section class="view" data-view="rules">
+            <header class="view__head">
+                <button class="view-back" aria-label="Назад">←</button>
+                <h2>Як грати</h2>
+            </header>
+            <div class="rules">
+                <p>Числа від 1 до 19 (без 10) записані цифрами в дев'ять колонок.</p>
+                <p>Закривайте пари <b>сусідніх</b> клітинок по горизонталі чи вертикалі, якщо числа
+                    <b>однакові</b> або дають у сумі <b>10</b>. Сусідніми також вважаються кінець одного
+                    рядка та початок наступного, а закриті клітинки «пропускаються».</p>
+                <p>Коли ходів не лишилось — тисніть <b>«Дописати»</b>: усі незакриті числа допишуться
+                    в нові рядки. Кнопка сама почне пульсувати, коли ходів немає.</p>
+                <p>Мета — закрити все поле. <b>Рекорд</b> — найменша кількість рядків, за яку це вдалося.</p>
+                <h3>Рахунок і комбо</h3>
+                <p>Кожна пара — 10 очок. Якщо закрити наступну пару протягом 6 секунд, росте комбо
+                    (множник до ×5). За кожен закритий рядок — бонус +50.</p>
+                <h3>Режими</h3>
+                <p><b>Нова гра</b> — класичний порядок. <b>Згенерувати рівень</b> — ті самі числа в
+                    випадковому порядку. <b>Щоденний виклик</b> — однаковий рівень для всіх на сьогодні,
+                    проходьте щодня й збирайте серію.</p>
+                <h3>Клавіатура</h3>
+                <p><kbd>←</kbd><kbd>↑</kbd><kbd>↓</kbd><kbd>→</kbd> — курсор, <kbd>Enter</kbd> / <kbd>Пробіл</kbd> — вибрати,
+                    <kbd>Z</kbd> — назад, <kbd>H</kbd> — підказка, <kbd>R</kbd> — дописати, <kbd>C</kbd> — чи є ще,
+                    <kbd>M</kbd> / <kbd>Esc</kbd> — меню.</p>
+            </div>
+        </section>
     </div>
 </div>
 
@@ -43,10 +165,16 @@
      slides in under it once relevant content has scrolled out of view. -->
 <div class="top-bar" id="top_bar">
     <div class="top-bar__stats" id="top_bar_stats">
-        <span class="top-bar__stat">Рядків <strong class="count-tr">3</strong></span>
-        <span class="top-bar__stat">Рекорд <strong class="count-high">—</strong></span>
-        <span class="top-bar__stat">Активних <strong class="total-active-tr">3</strong></span>
-        <span class="top-bar__stat">Клітинок <strong class="total-active-td">27</strong></span>
+        <div class="top-bar__group top-bar__group--primary">
+            <span class="top-bar__stat" title="Час гри"><span class="top-bar__icon">⏱</span><strong class="stat-time">00:00</strong></span>
+            <span class="top-bar__stat" title="Рахунок"><span class="top-bar__icon">★</span><strong class="stat-score">0</strong></span>
+            <span class="top-bar__stat">Рекорд <strong class="count-high">—</strong></span>
+        </div>
+        <div class="top-bar__group top-bar__group--secondary">
+            <span class="top-bar__stat">Рядків <strong class="count-tr">3</strong></span>
+            <span class="top-bar__stat">Активних <strong class="total-active-tr">3</strong></span>
+            <span class="top-bar__stat">Клітинок <strong class="total-active-td">27</strong></span>
+        </div>
     </div>
     <div class="top-bar__preview" id="pinned_row_preview">
         <div class="pinned-row-preview__row"></div>
@@ -56,19 +184,24 @@
 <!-- The board is built by js/board.js. -->
 <div id="field_game"></div>
 
+<!-- Floating combo indicator (drains over the combo window). -->
+<div class="combo-chip" id="combo_chip" aria-hidden="true">
+    <span class="combo-chip__label" id="combo_chip_label">Комбо ×2</span>
+    <span class="combo-chip__track"><span class="combo-chip__bar" id="combo_chip_bar"></span></span>
+</div>
+
 <!-- Always-visible action bar, icon-first so actions stay compact on
-     mobile. "Підказка", "Відновити" and "Головне меню" live in the overflow
-     menu since they're used less often than the rest. -->
+     mobile. Less frequent actions live in the overflow menu. -->
 <div class="bottom-bar" id="bottom_bar">
-    <button class="bottom-bar__btn back" title="Скасувати останній хід" aria-label="Назад">
+    <button class="bottom-bar__btn back" title="Скасувати останній хід (Z)" aria-label="Назад">
         <span class="bottom-bar__icon">&#8634;</span>
         <span class="bottom-bar__label">Назад</span>
     </button>
-    <button class="bottom-bar__btn rewrite-btn" title="Дописати активні числа в кінець поля" aria-label="Дописати">
+    <button class="bottom-bar__btn rewrite-btn" title="Дописати активні числа в кінець поля (R)" aria-label="Дописати">
         <span class="bottom-bar__icon">&#8635;</span>
         <span class="bottom-bar__label">Дописати</span>
     </button>
-    <button class="bottom-bar__btn check-btn" title="Перевірити, чи є ще доступні ходи" aria-label="Чи є ще?">
+    <button class="bottom-bar__btn check-btn" title="Перевірити, чи є ще доступні ходи (C)" aria-label="Чи є ще?">
         <span class="bottom-bar__icon">?</span>
         <span class="bottom-bar__label">Є ще?</span>
     </button>
@@ -76,7 +209,7 @@
         <span class="bottom-bar__icon">&#8595;</span>
         <span class="bottom-bar__label">Зберегти</span>
     </button>
-    <button class="bottom-bar__btn menu-btn" id="menu_btn" title="Ще" aria-label="Меню">
+    <button class="bottom-bar__btn menu-btn" id="menu_btn" title="Ще" aria-label="Меню" aria-expanded="false">
         <span class="bottom-bar__icon">&#9776;</span>
         <span class="bottom-bar__label">Ще</span>
     </button>
@@ -90,13 +223,21 @@
             <span class="overflow-menu__icon">&#8593;</span>
             <span>Відновити</span>
         </button>
-        <button class="overflow-menu__item" id="sound_toggle_btn">
+        <button class="overflow-menu__item" id="sound_toggle_btn" data-keep-open>
             <span class="overflow-menu__icon">&#9834;</span>
             <span id="sound_toggle_label">Звук: Увімкнено</span>
         </button>
-        <button class="overflow-menu__item" id="cell_colors_toggle_btn">
+        <button class="overflow-menu__item" id="cell_colors_toggle_btn" data-keep-open>
             <span class="overflow-menu__icon">&#9638;</span>
             <span id="cell_colors_toggle_label">Кольори клітинок: Увімкнено</span>
+        </button>
+        <button class="overflow-menu__item" id="theme_toggle_btn" data-keep-open>
+            <span class="overflow-menu__icon">&#9680;</span>
+            <span id="theme_toggle_label">Тема: Авто</span>
+        </button>
+        <button class="overflow-menu__item" id="open_settings_btn">
+            <span class="overflow-menu__icon">&#9881;</span>
+            <span>Налаштування</span>
         </button>
         <button class="overflow-menu__item" id="open_menu_btn">
             <span class="overflow-menu__icon">&#8962;</span>
@@ -106,8 +247,8 @@
 </div>
 
 <!-- Reusable confirmation popup: overwriting the board with a saved game,
-     and confirming "Дописати" while legal moves still remain. -->
-<div class="modal-overlay" id="confirm_modal">
+     confirming "Дописати" while legal moves remain, discarding progress. -->
+<div class="modal-overlay modal-overlay--top" id="confirm_modal" role="alertdialog" aria-modal="true" aria-labelledby="confirm_modal_text">
     <div class="modal-box">
         <p class="modal-box__text" id="confirm_modal_text">Ви впевнені?</p>
         <div class="modal-box__actions">
@@ -118,23 +259,48 @@
 </div>
 
 <!-- Shown once the whole board has been cleared. -->
-<div class="modal-overlay" id="victory_modal">
-    <div class="modal-box">
-        <div class="modal-box__icon">&#127942;</div>
-        <p class="modal-box__text" id="victory_modal_text">Вітаємо! Ви закрили все поле.</p>
-        <div class="modal-box__actions modal-box__actions--single">
-            <button class="modal-box__btn modal-box__btn--confirm" id="victory_ok_btn">Чудово!</button>
+<div class="modal-overlay" id="victory_modal" role="dialog" aria-modal="true" aria-labelledby="victory_title">
+    <div class="modal-box modal-box--victory">
+        <div class="modal-box__icon" id="victory_icon">&#127942;</div>
+        <h2 class="victory__title" id="victory_title">Перемога!</h2>
+        <p class="victory__sub" id="victory_sub"></p>
+        <div class="victory__badge" id="victory_badge" hidden></div>
+        <div class="victory__streak" id="victory_streak" hidden></div>
+
+        <div class="victory__grid">
+            <div class="victory__stat victory__stat--third"><span class="victory__value" id="v_rows">0</span><span class="victory__label">рядків</span></div>
+            <div class="victory__stat victory__stat--third"><span class="victory__value" id="v_time">00:00</span><span class="victory__label">час</span></div>
+            <div class="victory__stat victory__stat--third"><span class="victory__value" id="v_score">0</span><span class="victory__label">рахунок</span></div>
+            <div class="victory__stat victory__stat--half"><span class="victory__value" id="v_moves">0</span><span class="victory__label">пар закрито</span></div>
+            <div class="victory__stat victory__stat--half"><span class="victory__value" id="v_hints">0</span><span class="victory__label">підказок</span></div>
+        </div>
+
+        <div class="victory__ach" id="victory_ach" hidden></div>
+
+        <div class="victory__actions">
+            <button class="modal-box__btn modal-box__btn--confirm" id="victory_again_btn">Грати ще раз</button>
+            <button class="modal-box__btn modal-box__btn--cancel" id="victory_share_btn">Поділитися</button>
+            <button class="modal-box__btn modal-box__btn--ghost" id="victory_ok_btn">До меню</button>
         </div>
     </div>
 </div>
 
 <script src="./js/util.js"></script>
+<script src="./js/rng.js"></script>
 <script src="./js/storage.js"></script>
+<script src="./js/settings.js"></script>
 <script src="./js/audio.js"></script>
 <script src="./js/confetti.js"></script>
 <script src="./js/board.js"></script>
+<script src="./js/timer.js"></script>
+<script src="./js/score.js"></script>
+<script src="./js/stats.js"></script>
+<script src="./js/achievements.js"></script>
+<script src="./js/feedback.js"></script>
+<script src="./js/hud.js"></script>
 <script src="./js/preview.js"></script>
 <script src="./js/game.js"></script>
+<script src="./js/victory.js"></script>
 <script src="./js/menu.js"></script>
 <script src="./js/main.js"></script>
 </body>

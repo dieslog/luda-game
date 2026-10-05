@@ -51,7 +51,7 @@
         if (!prevRow) {
             return false;
         }
-        var last = prevRow.children[COLS - 1];
+        var last = prevRow.children[prevRow.children.length - 1];
         return last.classList.contains('close-box') ? prevCell(last) : last;
     }
 
@@ -89,6 +89,7 @@
     }
 
     var DIRECTIONS = [prevCell, nextCell, downCell, upCell];
+    var MOVES = {left: prevCell, right: nextCell, down: downCell, up: upCell};
 
     function isMatch(a, b) {
         if (!a || !b) {
@@ -109,6 +110,18 @@
         return false;
     }
 
+    // Every cell that could legally pair with `origin` right now.
+    function partnersOf(origin) {
+        var out = [];
+        for (var d = 0; d < DIRECTIONS.length; d++) {
+            var n = DIRECTIONS[d](origin);
+            if (n && n !== origin && out.indexOf(n) === -1 && isMatch(origin, n)) {
+                out.push(n);
+            }
+        }
+        return out;
+    }
+
     // First available legal pair anywhere on the board, or null.
     function findMatchingPair(tbody) {
         var open = LG.$$('td:not(.close-box)', tbody);
@@ -123,21 +136,32 @@
         return null;
     }
 
+    // Nearest open cell from `cell` in a direction ('left'|'right'|'up'|'down'),
+    // or null. Used for keyboard navigation.
+    function neighbour(cell, dir) {
+        var fn = MOVES[dir];
+        var n = fn ? fn(cell) : false;
+        return n || null;
+    }
+
     // --- rendering -----------------------------------------------------
     // digits: number[]; closed: optional boolean[] parallel to digits.
     // Returns the freshly built <tbody>.
     function render(container, digits, closed) {
         container.innerHTML = '';
         var table = LG.el('table');
+        table.setAttribute('role', 'grid');
         var tbody = LG.el('tbody');
 
         var row = null;
         for (var i = 0; i < digits.length; i++) {
             if (i % COLS === 0) {
                 row = LG.el('tr');
+                row.setAttribute('role', 'row');
                 tbody.appendChild(row);
             }
             var td = LG.el('td', null, String(digits[i]));
+            td.setAttribute('role', 'gridcell');
             if (closed && closed[i]) {
                 td.classList.add('close-box');
             }
@@ -212,16 +236,25 @@
         return LG.$$('td:not(.close-box)', tbody);
     }
 
+    // --- level generation ---------------------------------------------
+    //   classic : the fixed 1-9, 11-19 order
+    //   random  : the same numbers in a random order
+    //   daily   : a random order seeded by the date (same for everyone)
+    function digitsFor(mode, seed) {
+        if (mode === 'random') {
+            return digitsFromNumbers(LG.shuffle(STANDARD_NUMBERS));
+        }
+        if (mode === 'daily') {
+            return digitsFromNumbers(LG.shuffle(STANDARD_NUMBERS, LG.rng.fromString('luda:' + seed)));
+        }
+        return digitsFromNumbers(STANDARD_NUMBERS);
+    }
+
     LG.board = {
         COLS: COLS,
         STANDARD_NUMBERS: STANDARD_NUMBERS,
 
-        standardDigits: function () {
-            return digitsFromNumbers(STANDARD_NUMBERS);
-        },
-        randomDigits: function () {
-            return digitsFromNumbers(LG.shuffle(STANDARD_NUMBERS));
-        },
+        digitsFor: digitsFor,
 
         render: render,
         colorizeCell: colorizeCell,
@@ -232,6 +265,8 @@
 
         isMatch: isMatch,
         canPair: canPair,
+        partnersOf: partnersOf,
+        neighbour: neighbour,
         findMatchingPair: findMatchingPair
     };
 })(window.LG);

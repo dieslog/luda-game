@@ -28,6 +28,10 @@
     function adjustSpacing() {
         document.body.style.paddingTop = (els.stats.offsetHeight + PAGE_SPACING_BUFFER) + 'px';
         document.body.style.paddingBottom = (els.bottomBar.offsetHeight + PAGE_SPACING_BUFFER) + 'px';
+        // lets the floating combo chip sit just above the bottom bar
+        document.documentElement.style.setProperty('--bottom-bar-h', els.bottomBar.offsetHeight + 'px');
+        // ...and toasts sit just under the stats strip instead of covering it
+        document.documentElement.style.setProperty('--stats-h', els.stats.offsetHeight + 'px');
     }
 
     function update() {
@@ -103,6 +107,11 @@
         window.addEventListener('resize', refresh);
         window.addEventListener('resize', adjustSpacing);
         window.addEventListener('load', adjustSpacing);
+        // the stats strip can change height (e.g. wrapping on a narrow screen)
+        if (window.ResizeObserver) {
+            new ResizeObserver(adjustSpacing).observe(els.stats);
+            new ResizeObserver(adjustSpacing).observe(els.bottomBar);
+        }
     }
 
     LG.preview = {
